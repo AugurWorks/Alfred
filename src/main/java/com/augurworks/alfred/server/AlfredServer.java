@@ -159,7 +159,6 @@ public class AlfredServer {
 
     private static Runnable getJobStatusPollThread(final AlfredDirectoryListener listener) {
         return new Runnable() {
-
             @Override
             public void run() {
                 while (true) {
@@ -173,7 +172,6 @@ public class AlfredServer {
                     }
                 }
             }
-
         };
     }
 
