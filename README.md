@@ -20,7 +20,7 @@ To run the app after building run the following:
 docker run -d --name=alfred -p 8080:8080 alfred
 ```
 
-To confirm the project is running got to [http://[docker-ip]:8080/hello](http://[docker-ip]:8080/hello) and confirm that the Hello World JSON appears.
+To confirm the project is running got to [http://[docker-ip]:8080/](http://[docker-ip]:8080/) and confirm that a JSON message appears.
 
 ## Tag and Push
 **NOTE:** Info on configuring the AWS command line for ECR and the repo referred to here can be found [here](https://console.aws.amazon.com/ecs/home?region=us-east-1#/repositories/alfred#images)
