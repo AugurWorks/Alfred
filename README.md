@@ -30,7 +30,7 @@ After building tag the local build then push the current version and change the 
 ```bash
 docker tag alfred alfred:[TAG]
 docker tag alfred alfred:latest
-docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
+docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[TAG]
 docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
 ```
 
