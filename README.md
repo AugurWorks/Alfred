@@ -7,19 +7,14 @@ To run **Alfred** locally without building it follow the configuration step at t
 To build the WAR file within Docker run the following:
 
 ```bash
-docker build -f Dockerfile.build -t platform/build .
-# If on Linux
-docker run -d -v /path/to/my/target:/app/target platform/build
-# Otherwise
-docker run --name=builder platform/build
-docker cp builder:/app/target .
-docker build -f Dockerfile.run -t alfred .
+bash docker-build.sh
 ```
 
 ### Run
 To run the app after building run the following:
 
 ```bash
+docker rm -f alfred # Remove existing alfred container
 docker run -d --name=alfred -p 8080:8080 alfred
 ```
 
