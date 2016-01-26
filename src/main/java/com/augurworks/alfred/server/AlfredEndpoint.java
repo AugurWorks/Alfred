@@ -76,7 +76,7 @@ public class AlfredEndpoint {
     }
 
     private File getOutputFileForId(String id) {
-        return new File(prefs.getDirectory() + "/" + id + ".augout");
+        return new File(prefs.getDirectory() + "/" + id + ".augtrain.augout");
     }
 
     @RequestMapping(value="/hello", method = RequestMethod.GET, produces = "application/json")
