@@ -12,10 +12,10 @@ RUN mkdir /app
 WORKDIR /app
 COPY pom.xml /app
 
-RUN mvn war:manifest
+RUN mvn install war:manifest
 
 COPY . /app
 
 VOLUME ["/app/target"]
 
-CMD mvn war:war
+CMD mvn install war:war
