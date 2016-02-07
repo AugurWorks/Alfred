@@ -1,4 +1,4 @@
-# Platform
+# Alfred
 ## Docker
 ### Run Without Building
 To run **Alfred** locally without building it follow the configuration step at the top of the **Tag and Push** section then call the final command in that section to pull and run the container locally.
