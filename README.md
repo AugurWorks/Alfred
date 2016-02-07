@@ -31,8 +31,11 @@ To confirm the project is running got to [http://[docker-ip]:8080/](http://[dock
 After building tag the local build then push the current version and change the latest tag with the following:
 
 ```bash
+# Log in to AWS
+eval `aws ecr get-login [--profile aws-profile-name]`
+
 docker tag alfred 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[TAG]
-docker tag -f alfred 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
+docker tag alfred 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
 docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[TAG]
 docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
 ```
