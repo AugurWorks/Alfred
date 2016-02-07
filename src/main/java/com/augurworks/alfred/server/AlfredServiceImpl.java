@@ -58,7 +58,6 @@ public class AlfredServiceImpl implements AlfredService {
             public void run() {
                 while (true) {
                     String now = DATE_FORMAT.format(System.currentTimeMillis());
-                    log.info(now + " " + listener.getCurrentJobStatusesPretty());
                     try {
                         Thread.sleep(60000);
                     } catch (InterruptedException e) {
