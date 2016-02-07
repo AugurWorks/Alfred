@@ -1,5 +1,10 @@
 # Alfred
+Alfred is the AugurWorks butler, happily providing tomorrow's stock prices today.
+
 ## Docker
+### Docker Install
+Install [Docker Toolbox](https://www.docker.com/products/docker-toolbox) for Docker on Windows and Mac. Docker can be natively installed on Linux. Detailed install instructions for Linux can be found on the [Docker install page](https://docs.docker.com/engine/installation/).
+
 ### Run Without Building
 To run **Alfred** locally without building it follow the configuration step at the top of the **Tag and Push** section then call the final command in that section to pull and run the container locally.
 
