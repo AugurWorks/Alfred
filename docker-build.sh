@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 docker build -f Dockerfile.build -t alfred/build .
 docker run --name=builder alfred/build
 docker cp builder:/app/target .
