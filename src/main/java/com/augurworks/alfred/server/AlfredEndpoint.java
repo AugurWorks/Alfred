@@ -20,8 +20,8 @@ public class AlfredEndpoint {
     private static final Logger log = LoggerFactory.getLogger(AlfredEndpoint.class);
     private AlfredPrefs prefs;
 
-    public void setPrefs(AlfredPrefs prefs) {
-        this.prefs = prefs;
+    public AlfredEndpoint() {
+        this.prefs = new AlfredPrefsImpl();
     }
 
     public enum TrainStatus {
