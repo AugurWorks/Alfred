@@ -87,7 +87,7 @@ public class AlfredEndpoint {
 
     @RequestMapping(value="/", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody String root() {
-    	return "{\"message\":\"Alfred is working!\"}";
+        return "{\"message\":\"Alfred is working!\"}";
     }
 
 }

@@ -4,12 +4,12 @@ import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 
 public interface AlfredPrefs {
 
-	String getDirectory();
+    String getDirectory();
 
-	int getNumThreads();
+    int getNumThreads();
 
-	int getTimeout();
+    int getTimeout();
 
-	ScaleFunctionType getScaleFunction();
+    ScaleFunctionType getScaleFunction();
 
 }
