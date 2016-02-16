@@ -47,14 +47,14 @@ public class AlfredEndpoint {
     public @ResponseBody String getResult(@PathVariable String id) {
         TrainStatus status = getStatus(id);
         if (status != TrainStatus.COMPLETE) {
-            throw new IllegalArgumentException("Unable to return result for ID " + id + ", status was " + status);
+            return "IN_PROGRESS";
         }
         File outFileForId = getOutputFileForId(id);
         try {
             return FileUtils.readFileToString(outFileForId);
         } catch (IOException e) {
             log.error("Unable to read result file for ID " + id, e);
-            throw new IllegalStateException("Unable to return result for ID " + id + ", status was " + status);
+            return "UNKNOWN";
         }
     }
 
