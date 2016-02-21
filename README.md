@@ -27,7 +27,6 @@ To confirm the project is running got to [http://[docker-ip]:8080/](http://[dock
 
 #### Environment Variables
 The Docker container can be run with certain environment variables to customize the container. These can be passed with the `-e VARIABLE=value` flag on the `docker run` command. Below are the variables and the defaults:
-- **LISTEN_DIRECTORY** (default: nets) - Alfred server net directory
 - **NUM_THREADS** (default: 16) - Number of Alfred processing threads
 - **TRAINING_TIMEOUT_SEC** (default: 3600) - Net training timeout length
 - **VERBOSE** (default: false) - Verbose logging flag
