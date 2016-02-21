@@ -15,6 +15,8 @@ public class AlfredPrefsImpl implements AlfredPrefs {
     private static final String NUM_THREADS_DEFAULT = "16";
     private static final String TIMEOUT_PREF = "TRAINING_TIMEOUT_SEC";
     private static final String TIMEOUT_DEFAULT = "3600";
+    private static final String VERBOSE_PREF = "VERBOSE";
+    private static final boolean VERBOSE_DEFAULT = false;
     private static final String SCALE_FUNC_PREF = "SCALE_FUNCTION";
     private static final String SCALE_FUNC_DEFAULT = "SIGMOID";
 
@@ -34,6 +36,12 @@ public class AlfredPrefsImpl implements AlfredPrefs {
     public int getTimeout() {
         String environmentPath = System.getProperty(TIMEOUT_PREF) == null ? System.getenv(TIMEOUT_PREF) : System.getProperty(TIMEOUT_PREF);
         return parseInt(environmentPath, TIMEOUT_DEFAULT);
+    }
+
+    @Override
+    public boolean getVerbose() {
+        String environmentPath = System.getProperty(VERBOSE_PREF) == null ? System.getenv(VERBOSE_PREF) : System.getProperty(VERBOSE_PREF);
+        return environmentPath == null ? VERBOSE_DEFAULT : Boolean.valueOf(environmentPath);
     }
 
     @Override
