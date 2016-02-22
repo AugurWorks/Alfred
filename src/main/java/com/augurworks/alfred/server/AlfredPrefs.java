@@ -10,6 +10,8 @@ public interface AlfredPrefs {
 
     int getTimeout();
 
+    boolean getVerbose();
+
     ScaleFunctionType getScaleFunction();
 
 }

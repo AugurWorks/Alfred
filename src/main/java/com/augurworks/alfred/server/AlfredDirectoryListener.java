@@ -38,6 +38,7 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
     private final int timeoutSeconds;
     private final Semaphore semaphore;
     private final ScaleFunctionType sfType;
+    private AlfredPrefs prefs;
 
     public AlfredDirectoryListener(int numThreads, int timeoutSeconds, ScaleFunctionType sfType) {
         this.exec = Executors.newCachedThreadPool();
@@ -46,6 +47,7 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
         this.sfType = sfType;
         this.jobStatusByFileName = Maps.newConcurrentMap();
         this.futuresByFileName = Maps.newConcurrentMap();
+        this.prefs = new AlfredPrefsImpl();
     }
 
     public int getJobsSubmitted() {
@@ -155,7 +157,7 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
                     System.out.println("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.");
                     long startTime = System.currentTimeMillis();
                     RectNetFixed net = RectNetFixed.trainFile(fullPath,
-                                                              true,
+                                                              prefs.getVerbose(),
                                                               fullPath + "." + NetType.SAVE.getSuffix().toLowerCase(),
                                                               false,
                                                               timeoutSeconds * 1000,
