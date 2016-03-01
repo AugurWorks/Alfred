@@ -21,7 +21,7 @@ public class AlfredServiceImpl implements AlfredService {
     public void init() {
         prefs = new AlfredPrefsImpl();
         System.out.println("hello");
-        String dir = prefs.getDirectory();
+        String dir = "nets/";
         int threads = prefs.getNumThreads();
         int timeout = prefs.getTimeout();
         ScaleFunctionType scaleFunction = prefs.getScaleFunction();
