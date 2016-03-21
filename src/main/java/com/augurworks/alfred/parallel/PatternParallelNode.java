@@ -21,7 +21,7 @@ public class PatternParallelNode extends RectNetFixed implements
      */
     public PatternParallelNode(RectNetFixed r, BigDecimal[][] inpts,
             BigDecimal[] desired, int iterations, BigDecimal learningConstant) {
-        super(r.getX(), r.getY());
+        super(r.getX(), r.getY(), null);
         init(r);
         this.trainingData = inpts;
         this.desired = desired;

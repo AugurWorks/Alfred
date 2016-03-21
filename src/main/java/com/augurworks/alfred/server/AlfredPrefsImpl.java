@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 public class AlfredPrefsImpl implements AlfredPrefs {
 
-    private static final Logger log = LoggerFactory.getLogger(AlfredPrefsImpl.class);
     private static final String NUM_THREADS_PREF = "NUM_THREADS";
     private static final String NUM_THREADS_DEFAULT = "16";
     private static final String TIMEOUT_PREF = "TRAINING_TIMEOUT_SEC";
