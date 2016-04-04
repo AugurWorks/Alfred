@@ -31,7 +31,7 @@ public class PatternParallelRectNet extends RectNetFixed {
     }
 
     public PatternParallelRectNet(int depth, int side) {
-        super(depth, side);
+        super(depth, side, null);
     }
 
     /**

@@ -1,6 +1,10 @@
 package com.augurworks.alfred.server;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -149,32 +153,36 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
                 String name = file.getName();
                 jobsSubmitted.incrementAndGet();
                 jobStatusByFileName.put(name, JobStatus.SUBMITTED_NOT_STARTED);
+                PrintWriter logLocation = null;
                 try {
                     semaphore.acquire();
                     jobsInProgress.incrementAndGet();
                     jobStatusByFileName.put(name, JobStatus.IN_PROGRESS);
+                    logLocation = getLogLocation(name);
 
-                    System.out.println("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.");
+                    LoggingHelper.out("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
                     long startTime = System.currentTimeMillis();
                     RectNetFixed net = RectNetFixed.trainFile(fullPath,
                                                               prefs.getVerbose(),
                                                               fullPath + "." + NetType.SAVE.getSuffix().toLowerCase(),
                                                               false,
                                                               timeoutSeconds * 1000,
-                                                              sfType);
-                    System.out.println("Training complete for file " + net + " after " + TimeUtils.formatTimeSince(startTime));
+                                                              sfType,
+                                                              logLocation);
+                    LoggingHelper.out("Training complete for file " + net + " after " + TimeUtils.formatTimeSince(startTime), logLocation);
 
-                    System.out.println("Saving net for file " + name);
+                    LoggingHelper.out("Saving net for file " + name, logLocation);
                     RectNetFixed.saveNet(fullPath + "." + NetType.SAVE.getSuffix().toLowerCase(), net);
-                    System.out.println("Net saved for file " + name);
+                    LoggingHelper.out("Net saved for file " + name, logLocation);
 
-                    System.out.println("Writing augout file for " + name);
+                    LoggingHelper.out("Writing augout file for " + name, logLocation);
                     RectNetFixed.writeAugoutFile(fullPath + "." + NetType.AUGOUT.getSuffix().toLowerCase(), net);
-                    System.out.println("Augout written for " + name);
+                    LoggingHelper.out("Augout written for " + name, logLocation);
                 } catch (Throwable t) {
                     System.err.println("Exception caught during evaluation of " + name);
                     t.printStackTrace();
                 } finally {
+                    LoggingHelper.flushAndCloseQuietly(logLocation);
                     jobStatusByFileName.remove(name);
                     semaphore.release();
                     jobsInProgress.decrementAndGet();
@@ -183,6 +191,16 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
                 return null;
             }
         };
+    }
+
+    private PrintWriter getLogLocation(String name) {
+        try {
+            new File("logs").mkdir();
+            return new PrintWriter(new BufferedWriter(new FileWriter(new File("logs/" + name + ".log"))));
+        } catch (IOException e) {
+            System.err.println("Unable to create log file for " + name);
+            return null;
+        }
     }
 
 }
