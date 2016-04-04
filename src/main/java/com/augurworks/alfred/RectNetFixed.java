@@ -33,7 +33,6 @@ import com.sun.istack.internal.Nullable;
  */
 public class RectNetFixed extends Net {
     private static final double NEGATIVE_INFINITY = -1000000;
-    private static final double INFINITY = 1000000;
     public static final int DEFAULT_RETRIES = 5;
     // Inputs to network
     protected InputImpl[] inputs;
@@ -537,44 +536,18 @@ public class RectNetFixed extends Net {
         return BigDecimal.valueOf(3).multiply(last).multiply(oneMinusLast).multiply(desiredMinusLast);
     }
 
-    private static class TestStats {
-        public BigDecimal testScore;
-        public BigDecimal lastScore;
-        public BigDecimal bestCheck;
-        public BigDecimal bestTestCheck;
-
-        public TestStats() {
-            this.testScore = BigDecimal.ZERO;
-            this.lastScore = BigDecimal.valueOf(INFINITY);
-            this.bestCheck = BigDecimal.valueOf(INFINITY);
-            this.bestTestCheck = BigDecimal.valueOf(INFINITY);
-        }
-    }
-
     private static class TrainingStats {
         public long startTime;
         public TrainingStopReason stopReason;
         public boolean brokeAtLocalMax;
         public BigDecimal maxScore;
-        public int displayRounds;
 
         public TrainingStats(long start) {
             this.startTime = start;
             this.brokeAtLocalMax = false;
             this.stopReason = TrainingStopReason.HIT_TRAINING_LIMIT;
             this.maxScore = BigDecimal.valueOf(NEGATIVE_INFINITY);
-            this.displayRounds = 1000;
         }
-    }
-
-    public static RectNetFixed trainFile(String fileName,
-            boolean verbose,
-            String saveFile,
-            boolean testing,
-            long trainingTimeLimitMillis,
-            ScaleFunctionType sfType,
-            PrintWriter logOutputFile) throws InterruptedException {
-        return trainFile(fileName, verbose, saveFile, testing, trainingTimeLimitMillis, sfType, DEFAULT_RETRIES, logOutputFile);
     }
 
     private void checkInterrupted() throws InterruptedException {
@@ -593,32 +566,27 @@ public class RectNetFixed extends Net {
      * @return The trained neural network
      * @throws InterruptedException
      */
-    public static RectNetFixed trainFile(String fileName,
+    public static RectNetFixed trainFile(String name,
+                                         List<String> trainLines,
                                          boolean verbose,
-                                         String saveFile,
                                          boolean testing,
                                          long trainingTimeLimitMillis,
                                          ScaleFunctionType sfType,
                                          int triesRemaining,
                                          PrintWriter logOutputFile) throws InterruptedException {
-
         if (trainingTimeLimitMillis <= 0) {
             LoggingHelper.out("Training timeout was " + trainingTimeLimitMillis +
                     ", which is <= 0, so jobs will not time out.", logOutputFile);
         }
         if (triesRemaining == 0) {
-            System.err.println("Unable to train file " + fileName + "!");
-            throw new IllegalStateException("Unable to train file " + fileName + "!");
+            throw new IllegalStateException("Unable to train file " + name + "!");
         }
-        LoggingHelper.out("Parsing file " + fileName + " for training.", logOutputFile);
-        NetTrainSpecification netSpec = parseFile(fileName, sfType, verbose);
+        NetTrainSpecification netSpec = parseFile(trainLines, sfType, verbose);
         RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide(), logOutputFile);
         net.setData(netSpec.getNetData());
         net.setTimingInfo(TimingInfo.withDuration(trainingTimeLimitMillis));
         // Actually do the training part
-        LoggingHelper.out("Net for " + fileName + " parsed, starting training.", logOutputFile);
         TrainingStats trainingStats = new TrainingStats(System.currentTimeMillis());
-        TestStats testStats = new TestStats();
 
         int fileIteration = 0;
         BigDecimal score = null;
@@ -673,20 +641,14 @@ public class RectNetFixed extends Net {
                 break;
             }
 
-            // FIXME: wtf is this doing?
-            if (testing && fileIteration % trainingStats.displayRounds == 0) {
-                updateAndLogDisplayRound(verbose, saveFile, testing, netSpec, net,
-                        trainingStats, fileIteration,
-                        score, testStats, inputsAndTargets, logOutputFile);
-            }
         }
         logAfterTraining(verbose, net, trainingStats, fileIteration, score, inputsAndTargets, logOutputFile);
         if (trainingStats.brokeAtLocalMax) {
             long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
-            LoggingHelper.out("Retraining net from file " + fileName + " with " +
+            LoggingHelper.out("Retraining net from file " + name + " with " +
                     TimeUtils.formatSeconds((int)timeRemaining/1000) + " remaining.", logOutputFile);
-            net = RectNetFixed.trainFile(fileName, verbose, saveFile, testing, timeRemaining, sfType, triesRemaining--, logOutputFile);
+            net = RectNetFixed.trainFile(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile);
         }
         int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
         double rmsError = computeRmsError(net, inputsAndTargets);
@@ -709,80 +671,6 @@ public class RectNetFixed extends Net {
         } else {
             return Math.sqrt(totalRmsError / (1.0 * inputsAndTargets.size()));
         }
-    }
-
-    // FIXME: wtf is this method doing?
-    private static void updateAndLogDisplayRound(boolean verbose,
-            String saveFile, boolean testing, NetTrainSpecification netSpec,
-            RectNetFixed net, TrainingStats trainingStats, int fileIteration, BigDecimal score,
-            TestStats testStats, List<InputsAndTarget> inputsAndTargets, PrintWriter logWriter) {
-        int diffCounter = 0;
-        int diffCounter2 = 0;
-        BigDecimal diffCutoff = BigDecimal.valueOf(.1);
-        BigDecimal diffCutoff2 = BigDecimal.valueOf(.05);
-        // if (bestCheck > -1 * score)
-        //   ==> if (bestCheck - (-1 * score) > 0)
-        //     ==> if ( min(bestCheck - (-1 * score), 0) == 0)
-        if (BigDecimal.ZERO.min(testStats.bestCheck.subtract(BigDecimal.valueOf(-1).multiply(score))).equals(BigDecimal.ZERO)) {
-            RectNetFixed.saveNet(saveFile, net);
-            testStats.bestCheck = BigDecimal.valueOf(-1.0).multiply(score);
-        }
-        if (testing) {
-            int idx = saveFile.replaceAll("\\\\", "/").lastIndexOf(
-                    "/");
-            int idx2 = saveFile.lastIndexOf(
-                            ".");
-            testStats.testScore = RectNetFixed.testNet(
-                    saveFile.substring(0, idx + 1)
-                            + "OneThird.augtrain", net, verbose);
-            // if (testScore < bestTestCheck)
-            //   ==> if (testScore - bestTestCheck < 0)
-            //     ==> if ( max(testScore - bestTestCheck, 0) != 0
-            if (!BigDecimal.ZERO.max(testStats.testScore.subtract(testStats.bestTestCheck)).equals(BigDecimal.ZERO)) {
-                RectNetFixed.saveNet(saveFile.substring(0, idx2)
-                        + "Test.augsave", net);
-                testStats.bestTestCheck = testStats.testScore;
-            }
-        }
-        for (int lcv = 0; lcv < inputsAndTargets.size(); lcv++) {
-            InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
-            net.setInputs(inputsAndTarget.getInputs());
-            // if (Math.abs(targets.get(lcv) - r.getOutput()) > diffCutoff)
-            //   ==> if (Math.abs(targets.get(lcv) - r.getOutput()) - diffCutoff > 0)
-            //     ==> if (min(Math.abs(targets.get(lcv) - r.getOutput()) - diffCutoff, 0) == 0)
-            if (BigDecimal.ZERO.min(inputsAndTarget.getTarget().subtract(net.getOutput()).abs().subtract(diffCutoff)).equals(BigDecimal.ZERO)) {
-                diffCounter++;
-            }
-            // if (Math.abs(targets.get(lcv) - r.getOutput()) > diffCutoff2)
-            //   ==> if (Math.abs(targets.get(lcv) - r.getOutput()) - diffCutoff2 > 0)
-            //     ==> if (min(Math.abs(targets.get(lcv) - r.getOutput()) - diffCutoff2, 0) == 0)
-            if (BigDecimal.ZERO.min(inputsAndTarget.getTarget().subtract(net.getOutput()).abs().subtract(diffCutoff2)).equals(BigDecimal.ZERO)) {
-                diffCounter2++;
-            }
-        }
-        LoggingHelper.out(fileIteration + " rounds trained.", logWriter);
-        LoggingHelper.out("Current score: " + -1.0 * score.doubleValue(), logWriter);
-        LoggingHelper.out("Min Score=" + -1.0 * trainingStats.maxScore.doubleValue(), logWriter);
-        if (testing) {
-            LoggingHelper.out("Current Test Score=" + testStats.testScore, logWriter);
-            LoggingHelper.out("Min Test Score=" + testStats.bestTestCheck, logWriter);
-        }
-        LoggingHelper.out("Score change per round=" + (testStats.lastScore.doubleValue() + score.doubleValue())/trainingStats.displayRounds, logWriter);
-        LoggingHelper.out("Inputs Over " + diffCutoff + "="
-                + diffCounter + " of " + inputsAndTargets.size(), logWriter);
-        LoggingHelper.out("Inputs Over " + diffCutoff2 + "="
-                + diffCounter2 + " of " + inputsAndTargets.size(), logWriter);
-        BigDecimal diff = BigDecimal.ZERO;
-        for (int lcv = 0; lcv < inputsAndTargets.size(); lcv++) {
-            InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
-            net.setInputs(inputsAndTarget.getInputs());
-            diff = diff.add(net.getOutput().subtract(inputsAndTarget.getTarget()));
-        }
-        LoggingHelper.out("AvgDiff=" + diff.doubleValue() / (1.0 * inputsAndTargets.size()), logWriter);
-        LoggingHelper.out("Current learning constant: " + netSpec.getLearningConstant(), logWriter);
-        LoggingHelper.out("Time elapsed (s): " + (System.currentTimeMillis() - trainingStats.startTime) / 1000.0, logWriter);
-        LoggingHelper.out("", logWriter);
-        testStats.lastScore = BigDecimal.valueOf(-1.0).multiply(score);
     }
 
     private static void logAfterTraining(boolean verbose, RectNetFixed net, TrainingStats trainingStats,
@@ -819,51 +707,36 @@ public class RectNetFixed extends Net {
         }
     }
 
-    public static NetTrainSpecification parseFile(String fileName, ScaleFunctionType sfType, boolean verbose) {
-        if (!Net.validateAUGt(fileName)) {
+    public static NetTrainSpecification parseFile(File file, ScaleFunctionType sfType, boolean verbose) {
+        if (!Net.validateAUGt(file.getName())) {
             System.err.println("File not valid format.");
             throw new IllegalArgumentException("File not valid");
         }
-        Path file = Paths.get(fileName);
-        NetTrainSpecification.Builder netTrainingSpecBuilder = new Builder();
-        netTrainingSpecBuilder.scaleFunctionType(sfType);
         try {
-            List<String> fileLines = FileUtils.readLines(file.toFile());
-            Validate.isTrue(fileLines.size() >= 4, "Cannot parse file with no data");
-
-            Iterator<String> fileLineIterator = fileLines.iterator();
-            parseSizeLine(netTrainingSpecBuilder, fileLineIterator);
-            parseTrainingInfoLine(netTrainingSpecBuilder, fileLineIterator);
-            // skip the titles line
-            fileLineIterator.next();
-            while (fileLineIterator.hasNext()) {
-                parseDataLine(netTrainingSpecBuilder, fileLineIterator);
-            }
-        } catch (Throwable t) {
+            List<String> fileLines = FileUtils.readLines(file);
+            return parseFile(fileLines, sfType, verbose);
+        } catch (IOException e) {
             System.err.println("Unable to parse file " + file);
-            t.printStackTrace();
-            throw Throwables.propagate(t);
+            e.printStackTrace();
+            throw Throwables.propagate(e);
         }
-        NetTrainSpecification netTrainingSpec = netTrainingSpecBuilder.build();
-        logTrainingFileInfo(fileName, verbose, netTrainingSpec, null);
-        return netTrainingSpec;
     }
 
-    private static void logTrainingFileInfo(String fileName, boolean verbose,
-            NetTrainSpecification netTrainingSpec, PrintWriter logOutputFile) {
-        if (verbose) {
-            LoggingHelper.out("-------------------------", logOutputFile);
-            LoggingHelper.out("File path: " + fileName, logOutputFile);
-            LoggingHelper.out("Number Inputs: " + netTrainingSpec.getSide(), logOutputFile);
-            LoggingHelper.out("Net depth: " + netTrainingSpec.getDepth(), logOutputFile);
-            LoggingHelper.out("Number training sets: " + netTrainingSpec.getNetData().getTrainData().size(), logOutputFile);
-            LoggingHelper.out("Row iterations: " + netTrainingSpec.getNumberRowIterations(), logOutputFile);
-            LoggingHelper.out("File iterations: " + netTrainingSpec.getNumberFileIterations(), logOutputFile);
-            LoggingHelper.out("Learning constant: " + netTrainingSpec.getLearningConstant(), logOutputFile);
-            LoggingHelper.out("Minimum training rounds: " + netTrainingSpec.getMinTrainingRounds(), logOutputFile);
-            LoggingHelper.out("Performance cutoff: " + netTrainingSpec.getPerformanceCutoff(), logOutputFile);
-            LoggingHelper.out("-------------------------", logOutputFile);
+    public static NetTrainSpecification parseFile(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
+        NetTrainSpecification.Builder netTrainingSpecBuilder = new Builder();
+        netTrainingSpecBuilder.scaleFunctionType(sfType);
+        Validate.isTrue(augtrain.size() >= 4, "Cannot parse file with no data");
+
+        Iterator<String> fileLineIterator = augtrain.iterator();
+        parseSizeLine(netTrainingSpecBuilder, fileLineIterator);
+        parseTrainingInfoLine(netTrainingSpecBuilder, fileLineIterator);
+        // skip the titles line
+        fileLineIterator.next();
+        while (fileLineIterator.hasNext()) {
+            parseDataLine(netTrainingSpecBuilder, fileLineIterator);
         }
+        NetTrainSpecification netTrainingSpec = netTrainingSpecBuilder.build();
+        return netTrainingSpec;
     }
 
     private static void parseDataLine(
@@ -1203,49 +1076,6 @@ public class RectNetFixed extends Net {
         System.out.println("Today's price is $" + today);
         System.out.println("Tomorrow's price/change predicted to be $" + scaledValue);
         return scaledValue;
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        //What the net was trained for - prediction or twoThirds/oneThird
-        boolean predict=false;
-        //Which file system - root or local
-        boolean root=false;
-        //Where the net comes from - training of loading
-        boolean train=true;
-
-        String prefix, trainingFile, trainingFile2, predFile, testFile, savedFile;
-        if (root) {
-            prefix = "/root/Core/java/nets/test_files/";
-        } else {
-            prefix = "D:\\Users\\TheConnMan\\git\\Core\\java\\nets\\test_files\\";
-        }
-        trainingFile = prefix + "Train_1_Day.augtrain";
-        predFile = prefix + "Pred_1_Day.augpred";
-        savedFile = prefix + "TwoThirdsTrained.augsave";
-        trainingFile2 = prefix + "TwoThirds.augtrain";
-        testFile = prefix + "OneThird.augtrain";
-        RectNetFixed r;
-        if (train && predict) {
-            r = RectNetFixed.trainFile(trainingFile, false, savedFile, false, 1000000L, ScaleFunctionType.LINEAR, null);
-        } else if (train && !predict) {
-            r = RectNetFixed.trainFile(trainingFile2, false, savedFile, true, 1000000L, ScaleFunctionType.LINEAR, null);
-        } else {
-            r = RectNetFixed.loadNet(savedFile);
-        }
-        if (predict) {
-            // Predict
-            RectNetFixed.predictTomorrow(r, trainingFile, predFile, true, savedFile);
-        } else {
-            //Test
-            RectNetFixed.testNet(testFile, r, true);
-        }
-        System.exit(0);
-    }
-
-    @Override
-    public String toString() {
-        return "RectNetFixed [x=" + x + ", y=" + y + ", verbose=" + verbose
-                + "]";
     }
 
     private void out(String message) {

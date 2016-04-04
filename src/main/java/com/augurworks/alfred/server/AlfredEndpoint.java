@@ -21,12 +21,6 @@ public class AlfredEndpoint {
 
     private static final Logger log = LoggerFactory.getLogger(AlfredEndpoint.class);
 
-    public enum TrainStatus {
-        UNKNOWN,
-        IN_PROGRESS,
-        COMPLETE;
-    }
-
     @RequestMapping(value="/status/{id}", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody TrainStatus getStatus(@PathVariable String id) {
         File trainFileForId = getTrainFileForId(id);
@@ -36,7 +30,7 @@ public class AlfredEndpoint {
         } else if (trainFileForId.exists()) {
             return TrainStatus.IN_PROGRESS;
         } else {
-            return TrainStatus.UNKNOWN;
+            return TrainStatus.NOT_FOUND;
         }
     }
 

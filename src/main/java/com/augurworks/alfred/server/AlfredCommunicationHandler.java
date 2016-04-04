@@ -93,12 +93,7 @@ public class AlfredCommunicationHandler implements Runnable {
             alfredListener.shutdownNow();
             return;
         case STATUS:
-            StringBuilder sb = new StringBuilder("Server Status:\n");
-            sb.append("  Jobs in progress : " + alfredListener.getJobsInProgress()).append("\n");
-            sb.append("  Jobs submitted   : " + alfredListener.getJobsSubmitted()).append("\n");
-            sb.append("  Jobs completed   : " + alfredListener.getJobsCompleted()).append("\n");
-            sb.append(alfredListener.getCurrentJobStatusesPretty());
-            writer.write(sb.toString());
+            writer.write(alfredListener.printStatus());
             return;
         case CANCEL_JOB:
             String[] split2 = line.split(" ");

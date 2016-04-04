@@ -13,35 +13,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
-
-import com.augurworks.alfred.Net;
-import com.augurworks.alfred.Net.NetType;
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 import com.augurworks.alfred.util.TimeUtils;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
-
-    public enum JobStatus {
-        SUBMITTED_NOT_STARTED,
-        IN_PROGRESS
-    }
+public class AlfredDirectoryListener {
 
     private final ExecutorService exec;
-    private AtomicInteger jobsSubmitted = new AtomicInteger();
-    private AtomicInteger jobsCompleted = new AtomicInteger();
-    private AtomicInteger jobsInProgress = new AtomicInteger();
-    private final Map<String, JobStatus> jobStatusByFileName;
+    private final Map<String, TrainStatus> jobStatusByFileName;
     private final Map<String, Future<?>> futuresByFileName;
     private final int timeoutSeconds;
     private final Semaphore semaphore;
     private final ScaleFunctionType sfType;
+    private final UsageTracker usage = new UsageTracker();
     private AlfredPrefs prefs;
 
     public AlfredDirectoryListener(int numThreads, int timeoutSeconds, ScaleFunctionType sfType) {
@@ -54,29 +42,17 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
         this.prefs = new AlfredPrefsImpl();
     }
 
-    public int getJobsSubmitted() {
-        return jobsSubmitted.get();
-    }
-
-    public int getJobsCompleted() {
-        return jobsCompleted.get();
-    }
-
-    public int getJobsInProgress() {
-        return jobsInProgress.get();
-    }
-
     public void shutdownNow() {
         exec.shutdownNow();
     }
 
-    public Map<String, JobStatus> getCurrentJobStatuses() {
+    public Map<String, TrainStatus> getCurrentJobStatuses() {
         return ImmutableMap.copyOf(jobStatusByFileName);
     }
 
     public String getCurrentJobStatusesPretty() {
         StringBuilder sb = new StringBuilder("Current job statuses: \n");
-        for (Map.Entry<String, JobStatus> entry : getCurrentJobStatuses().entrySet()) {
+        for (Map.Entry<String, TrainStatus> entry : getCurrentJobStatuses().entrySet()) {
             sb.append("\t").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         sb.append("\n");
@@ -97,39 +73,10 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
         return exec.isTerminated();
     }
 
-    @Override
-    public void onFileCreate(File changedFile) {
-        try {
-            onFileCreateUnsafe(changedFile);
-        } catch (Throwable t) {
-            System.err.println("Error thrown on file create");
-            t.printStackTrace();
-        }
-    }
-
-    private void onFileCreateUnsafe(File changedFile) {
-        System.out.println("File created " + changedFile);
-        NetType netType = Net.NetType.fromFile(changedFile.getName());
-        if (netType == NetType.TRAIN) {
-            Callable<Void> trainCallable = getTrainCallable(changedFile);
-            Future<Void> future = exec.submit(trainCallable);
-            futuresByFileName.put(changedFile.getName(), future);
-        }
-        updateFuturesMap();
-    }
-
-    private void updateFuturesMap() {
-        // this doesn't strictly have to be kept up to date
-        // all the time, but we should keep it from growing too huge
-        List<String> toRemove = Lists.newArrayList();
-        for (Map.Entry<String, Future<?>> entry : futuresByFileName.entrySet()) {
-            if (entry.getValue().isDone()) {
-                toRemove.add(entry.getKey());
-            }
-        }
-        for (String done : toRemove) {
-            futuresByFileName.remove(done);
-        }
+    public void train(String name, String augtrain) {
+        Callable<Void> trainCallable = getTrainCallable(name, augtrain);
+        Future<Void> future = exec.submit(trainCallable);
+        futuresByFileName.put(name, future);
     }
 
     public void cancelJob(String fileName) {
@@ -145,48 +92,49 @@ public class AlfredDirectoryListener extends FileAlterationListenerAdaptor {
         }
     }
 
-    private Callable<Void> getTrainCallable(final File file) {
+    public String printStatus() {
+        StringBuilder sb = new StringBuilder("Server Status:\n");
+        sb.append("  Jobs in progress : " + usage.getJobsInProgress()).append("\n");
+        sb.append("  Jobs submitted   : " + usage.getJobsSubmitted()).append("\n");
+        sb.append("  Jobs completed   : " + usage.getJobsCompleted()).append("\n");
+        sb.append(getCurrentJobStatusesPretty());
+        return sb.toString();
+    }
+
+    private Callable<Void> getTrainCallable(final String name, final String augtrain) {
         return new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                String fullPath = file.getAbsolutePath();
-                String name = file.getName();
-                jobsSubmitted.incrementAndGet();
-                jobStatusByFileName.put(name, JobStatus.SUBMITTED_NOT_STARTED);
+                usage.incrementJobsSubmitted();
+                jobStatusByFileName.put(name, TrainStatus.SUBMITTED);
                 PrintWriter logLocation = null;
                 try {
                     semaphore.acquire();
-                    jobsInProgress.incrementAndGet();
-                    jobStatusByFileName.put(name, JobStatus.IN_PROGRESS);
+                    usage.incrementJobsInProgress();
+                    jobStatusByFileName.put(name, TrainStatus.IN_PROGRESS);
                     logLocation = getLogLocation(name);
 
                     LoggingHelper.out("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
                     long startTime = System.currentTimeMillis();
-                    RectNetFixed net = RectNetFixed.trainFile(fullPath,
+                    List<String> lines = Splitter.on("\n").splitToList(augtrain);
+                    RectNetFixed net = RectNetFixed.trainFile(name,
+                                                              lines,
                                                               prefs.getVerbose(),
-                                                              fullPath + "." + NetType.SAVE.getSuffix().toLowerCase(),
                                                               false,
                                                               timeoutSeconds * 1000,
                                                               sfType,
+                                                              5,
                                                               logLocation);
                     LoggingHelper.out("Training complete for file " + net + " after " + TimeUtils.formatTimeSince(startTime), logLocation);
-
-                    LoggingHelper.out("Saving net for file " + name, logLocation);
-                    RectNetFixed.saveNet(fullPath + "." + NetType.SAVE.getSuffix().toLowerCase(), net);
-                    LoggingHelper.out("Net saved for file " + name, logLocation);
-
-                    LoggingHelper.out("Writing augout file for " + name, logLocation);
-                    RectNetFixed.writeAugoutFile(fullPath + "." + NetType.AUGOUT.getSuffix().toLowerCase(), net);
-                    LoggingHelper.out("Augout written for " + name, logLocation);
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     System.err.println("Exception caught during evaluation of " + name);
                     t.printStackTrace();
                 } finally {
                     LoggingHelper.flushAndCloseQuietly(logLocation);
                     jobStatusByFileName.remove(name);
                     semaphore.release();
-                    jobsInProgress.decrementAndGet();
-                    jobsCompleted.incrementAndGet();
+                    usage.incrementJobsInProgress();
+                    usage.incrementJobsCompleted();
                 }
                 return null;
             }
