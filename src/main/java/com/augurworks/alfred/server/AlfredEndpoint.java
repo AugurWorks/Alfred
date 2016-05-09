@@ -28,12 +28,12 @@ public class AlfredEndpoint {
         this.service = service;
     }
 
-    @RequestMapping(value="/status/{id}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/status/{id}", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody TrainStatus getStatus(@PathVariable String id) {
         return service.getStatus(id);
     }
 
-    @RequestMapping(value="/result/{id}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/result/{id}", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody String getResult(@PathVariable String id) {
         TrainStatus status = getStatus(id);
         if (status != TrainStatus.COMPLETE) {
@@ -42,14 +42,19 @@ public class AlfredEndpoint {
         return service.getResult(id);
     }
 
-    @RequestMapping(value="/train", method = RequestMethod.POST, produces = "application/json")
+    @RequestMapping(value = "/train", method = RequestMethod.POST, produces = "application/json")
     public @ResponseBody String train(@RequestBody String net) {
         String id = UUID.randomUUID().toString();
         service.train(id, net);
         return id;
     }
 
-    @RequestMapping(value="/logs/{id}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/stats", method = RequestMethod.GET, produces = "application/json")
+    public @ResponseBody String getStats() {
+        return service.getStats();
+    }
+
+    @RequestMapping(value = "/logs/{id}", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody String getLogs(@PathVariable String id) {
         Collection<File> logFiles = getLogsForId(id);
         JSONObject object = new JSONObject();

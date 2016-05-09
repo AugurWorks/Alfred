@@ -17,6 +17,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
+import com.augurworks.alfred.stats.StatsTracker;
+import com.augurworks.alfred.stats.StatsTracker.Snapshot;
+import com.augurworks.alfred.stats.UsageTracker;
 import com.augurworks.alfred.util.TimeUtils;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
@@ -32,6 +35,7 @@ public class AlfredWrapper {
     private final Semaphore semaphore;
     private final ScaleFunctionType sfType;
     private final UsageTracker usage = new UsageTracker();
+    private final StatsTracker stats;
     private AlfredPrefs prefs;
 
     public AlfredWrapper(int numThreads, int timeoutSeconds, ScaleFunctionType sfType) {
@@ -42,6 +46,7 @@ public class AlfredWrapper {
         this.jobStatusByFileName = Maps.newConcurrentMap();
         this.futuresByFileName = Maps.newConcurrentMap();
         this.prefs = new AlfredPrefsImpl();
+        this.stats = new StatsTracker(prefs.getStatsHistory());
     }
 
     public void shutdownNow() {
@@ -138,7 +143,8 @@ public class AlfredWrapper {
                                                           timeoutSeconds * 1000,
                                                           sfType,
                                                           5,
-                                                          logLocation);
+                                                          logLocation,
+                                                          stats);
                     LoggingHelper.out("Training complete for file " + net + " after " + TimeUtils.formatTimeSince(startTime), logLocation);
                     jobStatusByFileName.put(name, TrainStatus.COMPLETE);
                     return net;
@@ -166,4 +172,7 @@ public class AlfredWrapper {
         }
     }
 
+    public List<Snapshot> getStats() {
+        return stats.getStats();
+    }
 }

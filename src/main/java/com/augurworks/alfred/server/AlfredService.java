@@ -10,4 +10,5 @@ public interface AlfredService {
     void train(String name, String augtrain);
     String getResult(String name);
     TrainStatus getStatus(String name);
+    String getStats();
 }

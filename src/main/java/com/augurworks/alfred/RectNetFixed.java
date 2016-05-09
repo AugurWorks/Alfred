@@ -20,6 +20,8 @@ import org.apache.commons.lang3.Validate;
 import com.augurworks.alfred.NetTrainSpecification.Builder;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 import com.augurworks.alfred.server.LoggingHelper;
+import com.augurworks.alfred.stats.StatsTracker;
+import com.augurworks.alfred.stats.StatsTracker.Snapshot;
 import com.augurworks.alfred.util.BigDecimals;
 import com.augurworks.alfred.util.TimeUtils;
 import com.google.common.base.Throwables;
@@ -578,7 +580,8 @@ public class RectNetFixed extends Net {
                                      long trainingTimeLimitMillis,
                                      ScaleFunctionType sfType,
                                      int triesRemaining,
-                                     PrintWriter logOutputFile) throws InterruptedException {
+                                     PrintWriter logOutputFile,
+                                     StatsTracker stats) throws InterruptedException {
         if (trainingTimeLimitMillis <= 0) {
             LoggingHelper.out("Training timeout was " + trainingTimeLimitMillis +
                     ", which is <= 0, so jobs will not time out.", logOutputFile);
@@ -646,18 +649,29 @@ public class RectNetFixed extends Net {
                 break;
             }
 
+            if (fileIteration % 500 == 0) {
+                double rmsError = computeRmsError(net, inputsAndTargets);
+                stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
+                        netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
+                        trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
+            }
+
         }
-        logAfterTraining(verbose, net, trainingStats, fileIteration, score, inputsAndTargets, logOutputFile);
         if (trainingStats.brokeAtLocalMax) {
             long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
             LoggingHelper.out("Retraining net from file " + name + " with " +
                     TimeUtils.formatSeconds((int)timeRemaining/1000) + " remaining.", logOutputFile);
-            net = RectNetFixed.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile);
+            net = RectNetFixed.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile, stats);
         }
         int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
         double rmsError = computeRmsError(net, inputsAndTargets);
         net.trainingSummary = new TrainingSummary(trainingStats.stopReason, timeExpired, fileIteration, rmsError);
+
+        stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
+                netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
+                trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
+
         return net;
     }
 
@@ -675,40 +689,6 @@ public class RectNetFixed extends Net {
             return 0;
         } else {
             return Math.sqrt(totalRmsError / (1.0 * inputsAndTargets.size()));
-        }
-    }
-
-    private static void logAfterTraining(boolean verbose, RectNetFixed net, TrainingStats trainingStats,
-            int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets, PrintWriter logOutputFile) {
-        if (verbose) {
-            // Information about performance and training.
-            if (trainingStats.brokeAtLocalMax) {
-                LoggingHelper.out("Local max hit.", logOutputFile);
-            } else if (trainingStats.stopReason == TrainingStopReason.HIT_PERFORMANCE_CUTOFF) {
-                LoggingHelper.out("Performance cutoff hit.", logOutputFile);
-            } else if (trainingStats.stopReason == TrainingStopReason.HIT_TRAINING_LIMIT) {
-                LoggingHelper.out("Training round limit reached.", logOutputFile);
-            } else if (trainingStats.stopReason == TrainingStopReason.OUT_OF_TIME) {
-                LoggingHelper.out("Training stopped after running out of time.", logOutputFile);
-            }
-            LoggingHelper.out("Rounds trained: " + fileIteration, logOutputFile);
-            LoggingHelper.out("Final score of " + -1.0 * score.doubleValue()
-                    / (1.0 * inputsAndTargets.size()), logOutputFile);
-            LoggingHelper.out("Time elapsed (ms): "
-                    + ((System.currentTimeMillis() - trainingStats.startTime)), logOutputFile);
-            // Results
-            LoggingHelper.out("-------------------------", logOutputFile);
-            LoggingHelper.out("Test Results: ", logOutputFile);
-            for (int lcv = 0; lcv < inputsAndTargets.size(); lcv++) {
-                InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
-                net.setInputs(inputsAndTarget.getInputs());
-                StringBuilder sb = new StringBuilder();
-                sb.append("Input " + lcv).append(" ");
-                sb.append("Target: " + inputsAndTarget.getTarget()).append(" ");
-                sb.append("Actual: " + net.getOutput().doubleValue());
-                LoggingHelper.out(sb.toString(), logOutputFile);
-            }
-            LoggingHelper.out("-------------------------", logOutputFile);
         }
     }
 

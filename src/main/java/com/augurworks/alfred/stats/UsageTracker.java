@@ -1,4 +1,4 @@
-package com.augurworks.alfred.server;
+package com.augurworks.alfred.stats;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

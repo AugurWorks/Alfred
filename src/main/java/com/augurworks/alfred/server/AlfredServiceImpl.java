@@ -1,5 +1,6 @@
 package com.augurworks.alfred.server;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
+import com.augurworks.alfred.stats.StatsTracker.Snapshot;
 import com.google.common.base.Optional;
 
 public class AlfredServiceImpl implements AlfredService {
@@ -82,4 +84,24 @@ public class AlfredServiceImpl implements AlfredService {
         }
     }
 
+    @Override
+    public String getStats() {
+        List<Snapshot> snapshots = alfred.getStats();
+        StringBuilder sb = new StringBuilder();
+        sb.append("roundsTrained,millisElapsed,maxRounds,name,");
+        sb.append("trainingConstant,isDone,completionReason,");
+        sb.append("residual,cutoff\n");
+        for (Snapshot snapshot : snapshots) {
+            sb.append(snapshot.getRoundsTrained()).append(",");
+            sb.append(snapshot.getMillisElapsed()).append(",");
+            sb.append(snapshot.getMaxRounds()).append(",");
+            sb.append(snapshot.getName()).append(",");
+            sb.append(snapshot.getTrainingConstant()).append(",");
+            sb.append(snapshot.isDone()).append(",");
+            sb.append(snapshot.getCompletionReason()).append(",");
+            sb.append(snapshot.getResidual()).append(",");
+            sb.append(snapshot.getCutoff()).append("\n");
+        }
+        return sb.toString();
+    }
 }

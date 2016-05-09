@@ -4,6 +4,8 @@ import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 
 public class AlfredPrefsImpl implements AlfredPrefs {
 
+    private static final String STATS_HISTORY_PREF = "STATS_HISTORY";
+    private static final String STATS_HISTORY_DEFAULT = "1000";
     private static final String NUM_THREADS_PREF = "NUM_THREADS";
     private static final String NUM_THREADS_DEFAULT = "16";
     private static final String TIMEOUT_PREF = "TRAINING_TIMEOUT_SEC";
@@ -43,6 +45,12 @@ public class AlfredPrefsImpl implements AlfredPrefs {
         } catch (NumberFormatException e) { }
         // this should throw if it fails.
         return Integer.parseInt(defaultValue);
+    }
+
+    @Override
+    public int getStatsHistory() {
+        String environmentPath = System.getProperty(STATS_HISTORY_PREF) == null ? System.getenv(STATS_HISTORY_PREF) : System.getProperty(STATS_HISTORY_PREF);
+        return parseInt(environmentPath, STATS_HISTORY_DEFAULT);
     }
 
 }
