@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -17,22 +18,23 @@ import java.util.concurrent.TimeUnit;
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 import com.augurworks.alfred.util.TimeUtils;
+import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
-public class AlfredDirectoryListener {
+public class AlfredWrapper {
 
     private final ExecutorService exec;
     private final Map<String, TrainStatus> jobStatusByFileName;
-    private final Map<String, Future<?>> futuresByFileName;
+    private final Map<String, Future<RectNetFixed>> futuresByFileName;
     private final int timeoutSeconds;
     private final Semaphore semaphore;
     private final ScaleFunctionType sfType;
     private final UsageTracker usage = new UsageTracker();
     private AlfredPrefs prefs;
 
-    public AlfredDirectoryListener(int numThreads, int timeoutSeconds, ScaleFunctionType sfType) {
+    public AlfredWrapper(int numThreads, int timeoutSeconds, ScaleFunctionType sfType) {
         this.exec = Executors.newCachedThreadPool();
         this.semaphore = new Semaphore(numThreads);
         this.timeoutSeconds = timeoutSeconds;
@@ -74,9 +76,21 @@ public class AlfredDirectoryListener {
     }
 
     public void train(String name, String augtrain) {
-        Callable<Void> trainCallable = getTrainCallable(name, augtrain);
-        Future<Void> future = exec.submit(trainCallable);
+        Callable<RectNetFixed> trainCallable = getTrainCallable(name, augtrain);
+        Future<RectNetFixed> future = exec.submit(trainCallable);
         futuresByFileName.put(name, future);
+    }
+
+    public Optional<RectNetFixed> getResultIfComplete(String name) throws InterruptedException, ExecutionException {
+        Future<RectNetFixed> future = futuresByFileName.get(name);
+        if (future == null) {
+            return null;
+        }
+        if (future.isDone()) {
+            return Optional.of(future.get());
+        } else {
+            return Optional.absent();
+        }
     }
 
     public void cancelJob(String fileName) {
@@ -101,10 +115,10 @@ public class AlfredDirectoryListener {
         return sb.toString();
     }
 
-    private Callable<Void> getTrainCallable(final String name, final String augtrain) {
-        return new Callable<Void>() {
+    private Callable<RectNetFixed> getTrainCallable(final String name, final String augtrain) {
+        return new Callable<RectNetFixed>() {
             @Override
-            public Void call() throws Exception {
+            public RectNetFixed call() throws Exception {
                 usage.incrementJobsSubmitted();
                 jobStatusByFileName.put(name, TrainStatus.SUBMITTED);
                 PrintWriter logLocation = null;
@@ -117,21 +131,22 @@ public class AlfredDirectoryListener {
                     LoggingHelper.out("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
                     long startTime = System.currentTimeMillis();
                     List<String> lines = Splitter.on("\n").splitToList(augtrain);
-                    RectNetFixed net = RectNetFixed.trainFile(name,
-                                                              lines,
-                                                              prefs.getVerbose(),
-                                                              false,
-                                                              timeoutSeconds * 1000,
-                                                              sfType,
-                                                              5,
-                                                              logLocation);
+                    RectNetFixed net = RectNetFixed.train(name,
+                                                          lines,
+                                                          prefs.getVerbose(),
+                                                          false,
+                                                          timeoutSeconds * 1000,
+                                                          sfType,
+                                                          5,
+                                                          logLocation);
                     LoggingHelper.out("Training complete for file " + net + " after " + TimeUtils.formatTimeSince(startTime), logLocation);
+                    jobStatusByFileName.put(name, TrainStatus.COMPLETE);
+                    return net;
                 } catch (Exception t) {
                     System.err.println("Exception caught during evaluation of " + name);
                     t.printStackTrace();
                 } finally {
                     LoggingHelper.flushAndCloseQuietly(logLocation);
-                    jobStatusByFileName.remove(name);
                     semaphore.release();
                     usage.incrementJobsInProgress();
                     usage.incrementJobsCompleted();

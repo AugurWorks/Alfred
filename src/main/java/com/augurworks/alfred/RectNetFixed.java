@@ -363,7 +363,7 @@ public class RectNetFixed extends Net {
     /**
      * Denormalizes targets and estimates.
      */
-    public static void writeAugoutFile(String filename, RectNetFixed net) {
+    public static String getAugout(RectNetFixed net) {
         StringBuilder sb = new StringBuilder();
         TrainingSummary summary = net.getTrainingSummary();
         sb.append("Training stop reason: ").append(summary.getStopReason().getExplanation()).append("\n");
@@ -376,8 +376,13 @@ public class RectNetFixed extends Net {
         for (InputsAndTarget predictionDatum : net.getDataSpec().getPredictionData()) {
             writePredictionLine(sb, predictionDatum, net);
         }
+        return sb.toString();
+    }
+
+    public static void writeAugoutFile(String filename, RectNetFixed net) {
+        String result = getAugout(net);
         try {
-            FileUtils.writeStringToFile(new File(filename), sb.toString());
+            FileUtils.writeStringToFile(new File(filename), result);
         } catch (Throwable t) {
             System.err.println("Unable to write to file " + filename);
             t.printStackTrace();
@@ -566,14 +571,14 @@ public class RectNetFixed extends Net {
      * @return The trained neural network
      * @throws InterruptedException
      */
-    public static RectNetFixed trainFile(String name,
-                                         List<String> trainLines,
-                                         boolean verbose,
-                                         boolean testing,
-                                         long trainingTimeLimitMillis,
-                                         ScaleFunctionType sfType,
-                                         int triesRemaining,
-                                         PrintWriter logOutputFile) throws InterruptedException {
+    public static RectNetFixed train(String name,
+                                     List<String> trainLines,
+                                     boolean verbose,
+                                     boolean testing,
+                                     long trainingTimeLimitMillis,
+                                     ScaleFunctionType sfType,
+                                     int triesRemaining,
+                                     PrintWriter logOutputFile) throws InterruptedException {
         if (trainingTimeLimitMillis <= 0) {
             LoggingHelper.out("Training timeout was " + trainingTimeLimitMillis +
                     ", which is <= 0, so jobs will not time out.", logOutputFile);
@@ -581,7 +586,7 @@ public class RectNetFixed extends Net {
         if (triesRemaining == 0) {
             throw new IllegalStateException("Unable to train file " + name + "!");
         }
-        NetTrainSpecification netSpec = parseFile(trainLines, sfType, verbose);
+        NetTrainSpecification netSpec = parseLines(trainLines, sfType, verbose);
         RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide(), logOutputFile);
         net.setData(netSpec.getNetData());
         net.setTimingInfo(TimingInfo.withDuration(trainingTimeLimitMillis));
@@ -648,7 +653,7 @@ public class RectNetFixed extends Net {
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
             LoggingHelper.out("Retraining net from file " + name + " with " +
                     TimeUtils.formatSeconds((int)timeRemaining/1000) + " remaining.", logOutputFile);
-            net = RectNetFixed.trainFile(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile);
+            net = RectNetFixed.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile);
         }
         int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
         double rmsError = computeRmsError(net, inputsAndTargets);
@@ -714,7 +719,7 @@ public class RectNetFixed extends Net {
         }
         try {
             List<String> fileLines = FileUtils.readLines(file);
-            return parseFile(fileLines, sfType, verbose);
+            return parseLines(fileLines, sfType, verbose);
         } catch (IOException e) {
             System.err.println("Unable to parse file " + file);
             e.printStackTrace();
@@ -722,7 +727,7 @@ public class RectNetFixed extends Net {
         }
     }
 
-    public static NetTrainSpecification parseFile(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
+    public static NetTrainSpecification parseLines(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
         NetTrainSpecification.Builder netTrainingSpecBuilder = new Builder();
         netTrainingSpecBuilder.scaleFunctionType(sfType);
         Validate.isTrue(augtrain.size() >= 4, "Cannot parse file with no data");

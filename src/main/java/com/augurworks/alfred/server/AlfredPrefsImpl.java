@@ -1,8 +1,6 @@
 package com.augurworks.alfred.server;
 
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AlfredPrefsImpl implements AlfredPrefs {
 
