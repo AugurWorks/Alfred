@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -25,7 +27,6 @@ import com.augurworks.alfred.stats.StatsTracker.Snapshot;
 import com.augurworks.alfred.util.BigDecimals;
 import com.augurworks.alfred.util.TimeUtils;
 import com.google.common.base.Throwables;
-import com.sun.istack.internal.Nullable;
 
 /**
  * Simple rectangular neural network.
