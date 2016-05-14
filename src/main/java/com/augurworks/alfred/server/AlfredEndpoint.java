@@ -1,10 +1,5 @@
 package com.augurworks.alfred.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.UUID;
-
 import org.apache.commons.io.FileUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -17,10 +12,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.UUID;
+
 @Controller
 public class AlfredEndpoint {
 
     private static final Logger log = LoggerFactory.getLogger(AlfredEndpoint.class);
+
+    @Autowired
     private final AlfredService service;
 
     @Autowired
