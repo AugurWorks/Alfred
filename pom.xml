@@ -45,9 +45,9 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-tomcat</artifactId>
-            <scope>provided</scope>
+            <!--1<scope>provided</scope>1-->
         </dependency>
-		<!-- Spring and Transactions -->
+        <!-- Spring and Transactions -->
 
 
 		<!-- Logging with SLF4J & LogBack -->

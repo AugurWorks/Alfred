@@ -14,9 +14,13 @@ RUN mkdir /app
 WORKDIR /app
 COPY pom.xml /app
 
+RUN sed -i 's/<!--1//g' /app/pom.xml && sed -i 's/1-->//g' /app/pom.xml
+
 RUN mvn install war:manifest
 
 COPY . /app
+
+RUN sed -i 's/<!--1//g' /app/pom.xml && sed -i 's/1-->//g' /app/pom.xml
 
 VOLUME ["/app/target"]
 
