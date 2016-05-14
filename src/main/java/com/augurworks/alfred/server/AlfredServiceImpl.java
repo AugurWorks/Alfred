@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +24,7 @@ public class AlfredServiceImpl implements AlfredService {
         this.prefs = prefs;
     }
 
+    @PostConstruct
     public void init() {
         prefs = new AlfredPrefsImpl();
         int threads = prefs.getNumThreads();
