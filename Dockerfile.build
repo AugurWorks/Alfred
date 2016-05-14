@@ -20,4 +20,4 @@ COPY . /app
 
 VOLUME ["/app/target"]
 
-CMD mvn install war:war
+CMD mvn package
