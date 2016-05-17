@@ -1,17 +1,19 @@
 package com.augurworks.alfred.server;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 import com.augurworks.alfred.stats.StatsTracker.Snapshot;
 import com.google.common.base.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+@Service
 public class AlfredServiceImpl implements AlfredService {
 
     private static final Logger log = LoggerFactory.getLogger(AlfredServiceImpl.class);
@@ -22,6 +24,7 @@ public class AlfredServiceImpl implements AlfredService {
         this.prefs = prefs;
     }
 
+    @PostConstruct
     public void init() {
         prefs = new AlfredPrefsImpl();
         int threads = prefs.getNumThreads();
