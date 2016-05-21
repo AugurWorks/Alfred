@@ -44,10 +44,7 @@ After building tag the local build then push the current version and change the 
 # Log in to AWS
 eval `aws ecr get-login [--profile aws-profile-name]`
 
-docker tag alfred 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[TAG]
-docker tag alfred 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
-docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[TAG]
-docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
+bash docker-tag.sh [version]
 ```
 
 To run the remote container run the following after logging into the AWS ECR:
