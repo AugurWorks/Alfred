@@ -81,11 +81,6 @@ public class AlfredEndpoint {
         return FileUtils.listFiles(new File("logs/" + id + "/"), null /* accept all file extensions */, true /* recurse */);
     }
 
-    @RequestMapping(value="/hello", method = RequestMethod.GET, produces = "application/json")
-    public @ResponseBody String hello() {
-        System.out.println("hello!");
-        return "{\"message\":\"Hello, world!\"}";
-    }
 
     @RequestMapping(value="/", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody String root() {
