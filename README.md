@@ -23,7 +23,7 @@ docker rm -f alfred # Remove existing alfred container
 docker run -d --name=alfred -p 8080:8080 alfred
 ```
 
-To confirm the project is running got to [http://[docker-ip]:8080/](http://[docker-ip]:8080/) and confirm that a JSON message appears.
+To confirm the project is running got to [http://[docker-ip]:8080/](http://[docker-ip]:8080/) and confirm you are redirected to the Swagger UI page.
 
 #### Volumes
 By default Docker containers will not persist nets between Docker runs. There is a volume location available for persisting nets between runs. Add the volume parameter (`-v /local/path/location:/usr/local/tomcat/nets`) to persist the nets to the host machine.

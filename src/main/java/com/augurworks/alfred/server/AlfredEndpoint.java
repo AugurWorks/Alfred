@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
+import springfox.documentation.annotations.ApiIgnore;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,10 +84,12 @@ public class AlfredEndpoint {
         return FileUtils.listFiles(new File("logs/" + id + "/"), null /* accept all file extensions */, true /* recurse */);
     }
 
-
-    @RequestMapping(value="/", method = RequestMethod.GET, produces = "application/json")
-    public @ResponseBody String root() {
-        return "{\"message\":\"Alfred is working!\"}";
+    @ApiIgnore
+    @RequestMapping(value="/", method = RequestMethod.GET)
+    public @ResponseBody ModelAndView root() {
+        return new ModelAndView(
+                new RedirectView("/swagger-ui.html")
+        );
     }
 
 }
