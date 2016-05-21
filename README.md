@@ -53,5 +53,5 @@ docker push 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:latest
 To run the remote container run the following after logging into the AWS ECR:
 
 ```bash
-docker run -d --log-driver=syslog --log-opt syslog-tag=alfred -p 80:8080 --volumes-from data 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred-[version]
+docker run -d --log-driver=syslog --log-opt syslog-tag=alfred -p 80:8080 --volumes-from data 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[version]
 ```
