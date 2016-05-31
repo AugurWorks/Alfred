@@ -1,5 +1,16 @@
 package com.augurworks.alfred.server;
 
+import com.augurworks.alfred.RectNetFixed;
+import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
+import com.augurworks.alfred.stats.StatsTracker;
+import com.augurworks.alfred.stats.StatsTracker.Snapshot;
+import com.augurworks.alfred.stats.UsageTracker;
+import com.augurworks.alfred.util.TimeUtils;
+import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -14,17 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import com.augurworks.alfred.RectNetFixed;
-import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import com.augurworks.alfred.stats.StatsTracker;
-import com.augurworks.alfred.stats.StatsTracker.Snapshot;
-import com.augurworks.alfred.stats.UsageTracker;
-import com.augurworks.alfred.util.TimeUtils;
-import com.google.common.base.Optional;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 
 public class AlfredWrapper {
 
@@ -149,7 +149,7 @@ public class AlfredWrapper {
                     jobStatusByFileName.put(name, TrainStatus.COMPLETE);
                     return net;
                 } catch (Exception t) {
-                    System.err.println("Exception caught during evaluation of " + name);
+                    LoggingHelper.error("Exception caught during evaluation of " + name, logLocation);
                     t.printStackTrace();
                 } finally {
                     LoggingHelper.flushAndCloseQuietly(logLocation);

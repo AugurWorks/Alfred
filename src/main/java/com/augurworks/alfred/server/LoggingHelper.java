@@ -22,6 +22,15 @@ public class LoggingHelper {
 
     public static void out(String message, PrintWriter logLocation) {
         System.out.println(message);
+        log(message, logLocation);
+    }
+
+    public static void error(String message, PrintWriter logLocation) {
+        System.err.println(message);
+        log(message, logLocation);
+    }
+
+    private static void log(String message, PrintWriter logLocation) {
         if (logLocation != null) {
             synchronized (logLocation) {
                 logLocation.println(message);
