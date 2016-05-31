@@ -1,5 +1,17 @@
 package com.augurworks.alfred;
 
+import com.augurworks.alfred.NetTrainSpecification.Builder;
+import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
+import com.augurworks.alfred.server.LoggingHelper;
+import com.augurworks.alfred.stats.StatsTracker;
+import com.augurworks.alfred.stats.StatsTracker.Snapshot;
+import com.augurworks.alfred.util.BigDecimals;
+import com.augurworks.alfred.util.TimeUtils;
+import com.google.common.base.Throwables;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.Validate;
+
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -13,20 +25,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import javax.annotation.Nullable;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.Validate;
-
-import com.augurworks.alfred.NetTrainSpecification.Builder;
-import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import com.augurworks.alfred.server.LoggingHelper;
-import com.augurworks.alfred.stats.StatsTracker;
-import com.augurworks.alfred.stats.StatsTracker.Snapshot;
-import com.augurworks.alfred.util.BigDecimals;
-import com.augurworks.alfred.util.TimeUtils;
-import com.google.common.base.Throwables;
 
 /**
  * Simple rectangular neural network.
@@ -567,7 +565,7 @@ public class RectNetFixed extends Net {
     /**
      * Train a neural network from a .augtrain training file
      *
-     * @param fileName
+     * @param name
      *            File path to .augtrain training file
      * @param verbose
      *            Flag to display debugging text or not
@@ -651,6 +649,7 @@ public class RectNetFixed extends Net {
             }
 
             if (fileIteration % 500 == 0) {
+                LoggingHelper.out("Net " + name + " has trained for " + fileIteration + " rounds", logOutputFile);
                 double rmsError = computeRmsError(net, inputsAndTargets);
                 stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
                         netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
