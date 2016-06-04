@@ -10,6 +10,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -128,6 +129,10 @@ public class AlfredWrapper {
         return new Callable<RectNetFixed>() {
             @Override
             public RectNetFixed call() throws Exception {
+                MDC.put("netId", name);
+                MDC.put("trainingTimeLimitSec", timeoutSeconds);
+                MDC.put("scaleFunctionType", sfType.name());
+
                 usage.incrementJobsSubmitted();
                 jobStatusByFileName.put(name, TrainStatus.SUBMITTED);
                 PrintWriter logLocation = null;
@@ -149,7 +154,7 @@ public class AlfredWrapper {
                                                           5,
                                                           logLocation,
                                                           stats);
-                    LoggingHelper.out("Training complete for file " + net + " after " + TimeUtils.formatTimeSince(startTime), logLocation);
+                    LoggingHelper.out("Training complete for " + name + " after " + TimeUtils.formatTimeSince(startTime), logLocation);
                     jobStatusByFileName.put(name, TrainStatus.COMPLETE);
                     return net;
                 } catch (Exception t) {

@@ -53,7 +53,6 @@ public class AlfredEndpoint {
     @RequestMapping(value = "/train", method = RequestMethod.POST, produces = "application/json")
     public @ResponseBody String train(@RequestBody String net) {
         String id = UUID.randomUUID().toString();
-        MDC.put("netId", id);
         service.train(id, net);
         return id;
     }
@@ -73,6 +72,7 @@ public class AlfredEndpoint {
     @ApiIgnore
     @RequestMapping(value="/", method = RequestMethod.GET)
     public @ResponseBody ModelAndView root() {
+        log.info("Home page requested");
         return new ModelAndView(
                 new RedirectView("/swagger-ui.html")
         );

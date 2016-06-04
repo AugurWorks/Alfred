@@ -586,6 +586,7 @@ public class RectNetFixed extends Net {
                                      int triesRemaining,
                                      PrintWriter logOutputFile,
                                      StatsTracker stats) throws InterruptedException {
+
         if (trainingTimeLimitMillis <= 0) {
             LoggingHelper.out("Training timeout was " + trainingTimeLimitMillis +
                     ", which is <= 0, so jobs will not time out.", logOutputFile);
