@@ -1,27 +1,30 @@
 FROM alpine:latest
 
-RUN apk add --no-cache openjdk8 curl tar
+RUN apk update && apk add --no-cache openjdk8 wget bash libstdc++ && rm -rf /var/cache/apk/*
 
-ENV MAVEN_VERSION 3.3.9
+ENV GRADLE_VERSION 2.12
+ENV GRADLE_HOME /usr/local/gradle
+ENV PATH ${PATH}:${GRADLE_HOME}/bin
+ENV GRADLE_USER_HOME /gradle
 
-RUN curl -fsSL https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz | tar xzf - -C /usr/share \
-	&& mv /usr/share/apache-maven-$MAVEN_VERSION /usr/share/maven \
-	&& ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+# Install gradle
+WORKDIR /usr/local
+RUN wget  https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip --no-check-certificate && \
+    unzip gradle-$GRADLE_VERSION-bin.zip && \
+    rm -f gradle-$GRADLE_VERSION-bin.zip && \
+    ln -s gradle-$GRADLE_VERSION gradle && \
+    echo -ne "- with Gradle $GRADLE_VERSION\n" >> /root/.built
 
-ENV MAVEN_HOME /usr/share/maven
+RUN mkdir -p /gradle && mkdir -p /app
 
-RUN mkdir /app
 WORKDIR /app
-COPY pom.xml /app
 
-RUN sed -i 's/<!--1//g' /app/pom.xml && sed -i 's/1-->//g' /app/pom.xml
+COPY build.gradle /app
 
-RUN mvn install war:manifest
+RUN gradle war
 
 COPY . /app
 
-RUN sed -i 's/<!--1//g' /app/pom.xml && sed -i 's/1-->//g' /app/pom.xml
-
 VOLUME ["/app/target"]
 
-CMD mvn package
+CMD gradle war
