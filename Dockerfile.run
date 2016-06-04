@@ -7,8 +7,8 @@ ENV PATH $CATALINA_HOME/bin:$PATH
 RUN mkdir -p "$CATALINA_HOME"
 WORKDIR $CATALINA_HOME
 
-ENV TOMCAT_MAJOR 7
-ENV TOMCAT_VERSION 7.0.69
+ENV TOMCAT_MAJOR 8
+ENV TOMCAT_VERSION 8.0.35
 ENV TOMCAT_TGZ_URL https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz
 
 RUN set -x \
@@ -23,6 +23,6 @@ VOLUME ["/usr/local/tomcat/nets"]
 
 RUN rm -rf /usr/local/tomcat/webapps/*
 
-COPY target/alfred*?.war /usr/local/tomcat/webapps/ROOT.war
+COPY libs/alfred*?.war /usr/local/tomcat/webapps/ROOT.war
 
 CMD ["catalina.sh", "run"]
