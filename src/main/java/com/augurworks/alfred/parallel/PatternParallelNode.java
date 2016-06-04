@@ -1,15 +1,19 @@
 package com.augurworks.alfred.parallel;
 
+import com.augurworks.alfred.RectNetFixed;
+import com.augurworks.alfred.WeightDelta;
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 import java.util.concurrent.Callable;
 
-import org.apache.commons.lang3.Validate;
-
-import com.augurworks.alfred.RectNetFixed;
-import com.augurworks.alfred.WeightDelta;
-
 public class PatternParallelNode extends RectNetFixed implements
         Callable<WeightDelta> {
+
+    Logger log = LoggerFactory.getLogger(PatternParallelNode.class);
+
     private BigDecimal[][] trainingData;
     private BigDecimal[] desired;
     private int iterations;
@@ -56,7 +60,7 @@ public class PatternParallelNode extends RectNetFixed implements
             // Compute the last node error
             BigDecimal deltaF = this.getOutputError(desired);
             if (verbose) {
-                System.out.println("DeltaF: " + deltaF);
+                log.info("DeltaF: {}", deltaF);
             }
             // For each interior node, compute the weighted error
             // deltas are of the form
@@ -97,15 +101,9 @@ public class PatternParallelNode extends RectNetFixed implements
                     }
                     deltas[leftCol][leftRow] = delta.multiply(summedRightWeightDelta);
                     if (verbose) {
-                        System.out.println("leftCol: " + leftCol
-                                + ", leftRow: " + leftRow + ", lo*(1-lo): "
-                                + delta);
-                        System.out.println("leftCol: " + leftCol
-                                + ", leftRow: " + leftRow + ", srwd: "
-                                + summedRightWeightDelta);
-                        System.out.println("leftCol: " + leftCol
-                                + ", leftRow: " + leftRow + ", delta: "
-                                + deltas[leftCol][leftRow]);
+                        log.info("leftCol: {}, leftRow: {}, lo*(1-lo): {}", leftCol, leftRow, delta);
+                        log.info("leftCol: {}, leftRow: {}, srwd: {}", leftCol, leftRow, summedRightWeightDelta);
+                        log.info("leftCol: {}, leftRow: {}, delta: {}", leftCol, leftRow, deltas[leftCol][leftRow]);
                     }
                 }
             }
@@ -136,10 +134,8 @@ public class PatternParallelNode extends RectNetFixed implements
                                 dw);
                         wd.changeInnerDelta(dw, rightCol, rightRow, leftRow);
                         if (verbose) {
-                            System.out.println(leftCol + "," + leftRow + "->"
-                                    + rightCol + "," + rightRow);
-                            System.out.println(this.neurons[rightCol][rightRow]
-                                    .getWeight(leftRow));
+                            log.info("{},{}->{},{}", leftCol, leftRow, rightCol, rightRow);
+                            log.info("{}", this.neurons[rightCol][rightRow].getWeight(leftRow));
                         }
                     }
                 }
@@ -151,9 +147,9 @@ public class PatternParallelNode extends RectNetFixed implements
             BigDecimal learningConstant, WeightDelta wd) {
         for (int i = 0; i < inpts.length; i++) {
             train(inpts[i], desired[i], iterations, learningConstant, wd);
-            //System.out.println("inpts: " + inpts[i][0] + ", " + inpts[i][1]);
-            //System.out.println("desired: " + desired[i]);
-            //System.out.println("");
+            //log.info("inpts: {}, {}", inpts[i][0], inpts[i][1]);
+            //log.info("desired: {}", desired[i]);
+            //log.info("");
         }
     }
 

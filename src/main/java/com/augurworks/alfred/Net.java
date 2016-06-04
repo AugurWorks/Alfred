@@ -1,4 +1,8 @@
 package com.augurworks.alfred;
+import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -7,9 +11,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.apache.commons.io.FilenameUtils;
-
 public abstract class Net {
+
+    static Logger log = LoggerFactory.getLogger(Net.class);
+
     /**
      * Returns the output of this Net.
      *
@@ -55,7 +60,7 @@ public abstract class Net {
      */
     public static boolean validateAUGt(String fileName) {
         if (!(fileName.toLowerCase().endsWith(".augtrain"))) {
-            System.err.println("Training file should end in .augtrain");
+            log.error("Training file should end in .augtrain");
             return false;
         }
         Charset charset = Charset.forName("US-ASCII");
@@ -117,13 +122,12 @@ public abstract class Net {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err.println("Validation failed at line: "
-                            + lineNumber);
+                    log.error("Validation failed at line: {}", lineNumber);
                     return false;
                 }
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             return false;
         }
         return true;
@@ -131,7 +135,7 @@ public abstract class Net {
 
     public static boolean validateAUGTest(String fileName, int side) {
         if (!(fileName.toLowerCase().endsWith(".augtrain"))) {
-            System.err.println("Training file should end in .augtrain");
+            log.error("Training file should end in .augtrain");
             return false;
         }
         Charset charset = Charset.forName("US-ASCII");
@@ -204,13 +208,12 @@ public abstract class Net {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err.println("Validation failed at line: "
-                            + lineNumber);
+                    log.error("Validation failed at line: {}", lineNumber);
                     return false;
                 }
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             return false;
         }
         return true;
@@ -226,7 +229,7 @@ public abstract class Net {
      */
     public static boolean validateAUGs(String fileName) {
         if (!(fileName.toLowerCase().endsWith(".augsave"))) {
-            System.err.println("Training file should end in .augsave");
+            log.error("Training file should end in .augsave");
             return false;
         }
         Charset charset = Charset.forName("US-ASCII");
@@ -282,15 +285,14 @@ public abstract class Net {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err.println("Validation failed at line: "
-                            + lineNumber);
+                    log.error("Validation failed at line: {}", lineNumber);
                     return false;
                 }
             }
             if (lineNumber != x * (y-1) + 3)
                 throw new RuntimeException();
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             return false;
         }
         return true;
@@ -298,7 +300,7 @@ public abstract class Net {
 
     public static boolean validateAUGPred(String fileName, int size) {
         if (!(fileName.toLowerCase().endsWith(".augpred"))) {
-            System.err.println("Training file should end in .augpred");
+            log.error("Training file should end in .augpred");
             return false;
         }
         Charset charset = Charset.forName("US-ASCII");
@@ -346,15 +348,14 @@ public abstract class Net {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err.println("Validation failed at line: "
-                            + lineNumber);
+                    log.error("Validation failed at line: {}", lineNumber);
                     return false;
                 }
             }
             if (lineNumber != 4)
                 throw new RuntimeException();
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             return false;
         }
         return true;

@@ -2,7 +2,7 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.more.appenders.DataFluentAppender
 
-import static ch.qos.logback.classic.Level.INFO
+import static ch.qos.logback.classic.Level.DEBUG
 
 appender("FLUENTD", DataFluentAppender) {
     label = "logback"
@@ -11,8 +11,7 @@ appender("FLUENTD", DataFluentAppender) {
     maxQueueSize = 999
     additionalFields = [
         function: "ALF",
-        hostname: System.getenv('HOSTNAME') ?: InetAddress.getLocalHost().getHostName(),
-        ip: InetAddress.getLocalHost().getHostAddress()
+        hostname: System.getenv('HOSTNAME') ?: InetAddress.getLocalHost().getHostName()
     ]
 }
 
@@ -21,4 +20,4 @@ appender("STDOUT", ConsoleAppender) {
         pattern = "%date [%thread] %-5level %logger{15}#%line %msg %n"
     }
 }
-root(INFO, System.getenv('FLUENTD_HOST') ? ["STDOUT", "FLUENTD"] : ["STDOUT"])
+logger('com.augurworks.alfred', DEBUG, System.getenv('FLUENTD_HOST') ? ["STDOUT", "FLUENTD"] : ["STDOUT"])

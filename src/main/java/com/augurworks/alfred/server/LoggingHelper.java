@@ -1,8 +1,13 @@
 package com.augurworks.alfred.server;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.PrintWriter;
 
 public class LoggingHelper {
+
+    static Logger log = LoggerFactory.getLogger(LoggingHelper.class);
 
     private LoggingHelper() {
         // utility class
@@ -16,17 +21,22 @@ public class LoggingHelper {
             writer.flush();
             writer.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error closing log file", e);
         }
     }
 
     public static void out(String message, PrintWriter logLocation) {
-        System.out.println(message);
+        log.info(message);
         log(message, logLocation);
     }
 
     public static void error(String message, PrintWriter logLocation) {
-        System.err.println(message);
+        log.error(message);
+        log(message, logLocation);
+    }
+
+    public static void error(String message, PrintWriter logLocation, Exception e) {
+        log.error(message, e);
         log(message, logLocation);
     }
 
