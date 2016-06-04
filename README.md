@@ -30,6 +30,8 @@ By default Docker containers will not persist nets between Docker runs. There is
 
 #### Environment Variables
 The Docker container can be run with certain environment variables to customize the container. These can be passed with the `-e VARIABLE=value` flag on the `docker run` command. Below are the variables and the defaults:
+- **FLUENTD_HOST** - Remote Fluentd host for centralized logging
+- **HOSTNAME** (default: container id) - Hostname shown in Fluentd logging
 - **NUM_THREADS** (default: 16) - Number of Alfred processing threads
 - **TRAINING_TIMEOUT_SEC** (default: 3600) - Net training timeout length
 - **VERBOSE** (default: false) - Verbose logging flag
@@ -50,5 +52,5 @@ bash docker-tag.sh [version]
 To run the remote container run the following after logging into the AWS ECR:
 
 ```bash
-docker run -d --log-driver=fluentd --log-opt fluentd-address=docker.augurworks.com:24224 --name=alfred -p 80:8080 --volumes-from data 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[version]
+docker run -d --name=alfred -p 80:8080 -e FLUENTD_HOST=docker.augurworks.com -e HOSTNAME=alfred --volumes-from data 274685854631.dkr.ecr.us-east-1.amazonaws.com/alfred:[version]
 ```
