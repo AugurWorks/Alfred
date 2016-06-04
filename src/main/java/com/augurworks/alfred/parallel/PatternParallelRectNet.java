@@ -1,5 +1,12 @@
 package com.augurworks.alfred.parallel;
 
+import com.augurworks.alfred.Net;
+import com.augurworks.alfred.RectNetFixed;
+import com.augurworks.alfred.WeightDelta;
+import com.augurworks.alfred.server.LoggingHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -14,10 +21,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.augurworks.alfred.Net;
-import com.augurworks.alfred.RectNetFixed;
-import com.augurworks.alfred.WeightDelta;
-
 /**
  * Master
  *
@@ -25,6 +28,8 @@ import com.augurworks.alfred.WeightDelta;
  *
  */
 public class PatternParallelRectNet extends RectNetFixed {
+
+    static Logger log = LoggerFactory.getLogger(LoggingHelper.class);
 
     public PatternParallelRectNet() {
         super();
@@ -56,7 +61,7 @@ public class PatternParallelRectNet extends RectNetFixed {
          */
         boolean valid = Net.validateAUGt(fileName);
         if (!valid) {
-            System.err.println("File not valid format.");
+            log.error("File not valid format.");
             throw new RuntimeException("File not valid");
         }
         // Now we need to pull information out of the augtrain file.
@@ -112,27 +117,26 @@ public class PatternParallelRectNet extends RectNetFixed {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err
-                            .println("Training failed at line: " + lineNumber);
+                    log.error("Training failed at line: {}", lineNumber);
                 }
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             throw new RuntimeException("IOException in parsing file");
         }
         // Information about the training file.
         if (verbose) {
-            System.out.println("-------------------------");
-            System.out.println("File path: " + fileName);
-            System.out.println("Number Inputs: " + side);
-            System.out.println("Net depth: " + depth);
-            System.out.println("Number training sets: " + targets.size());
-            System.out.println("Row iterations: " + rowIter);
-            System.out.println("File iterations: " + fileIter);
-            System.out.println("Learning constant: " + learningConstant);
-            System.out.println("Minimum training rounds: " + minTrainingRounds);
-            System.out.println("Performance cutoff: " + cutoff);
-            System.out.println("-------------------------");
+            log.info("-------------------------");
+            log.info("File path: {}", fileName);
+            log.info("Number Inputs: {}", side);
+            log.info("Net depth: {}", depth);
+            log.info("Number training sets: {}", targets.size());
+            log.info("Row iterations: {}", rowIter);
+            log.info("File iterations: {}", fileIter);
+            log.info("Learning constant: {}", learningConstant);
+            log.info("Minimum training rounds: {}", minTrainingRounds);
+            log.info("Performance cutoff: {}", cutoff);
+            log.info("-------------------------");
         }
         /*
          * END of copy-paste region
@@ -249,30 +253,25 @@ public class PatternParallelRectNet extends RectNetFixed {
                             diffCounter2++;
                         }
                     }
-                    System.out.println(i + " rounds trained.");
-                    System.out.println("Current score: " + -1.0 * score.doubleValue());
-                    System.out.println("Min Score=" + -1.0 * maxScore.doubleValue());
+                    log.info("{} rounds trained", i);
+                    log.info("Current score: {}", -1.0 * score.doubleValue());
+                    log.info("Min Score={}", -1.0 * maxScore.doubleValue());
                     if (testing) {
-                        System.out.println("Current Test Score=" + testScore);
-                        System.out.println("Min Test Score=" + bestTestCheck);
+                        log.info("Current Test Score={}", testScore);
+                        log.info("Min Test Score={}", bestTestCheck);
                     }
-                    System.out.println("Score change=" + (lastScore.add(score)).doubleValue());
-                    System.out.println("Inputs Over " + diffCutoff + "="
-                            + diffCounter + " of " + inputSets.size());
-                    System.out.println("Inputs Over " + diffCutoff2 + "="
-                            + diffCounter2 + " of " + inputSets.size());
+                    log.info("Score change={}", lastScore.add(score).doubleValue());
+                    log.info("Inputs Over {}={} of {}", diffCutoff, diffCounter, inputSets.size());
+                    log.info("Inputs Over {}={} of {}", diffCutoff2, diffCounter2, inputSets.size());
                     BigDecimal diff = BigDecimal.ZERO;
                     for (int lcv = 0; lcv < inputSets.size(); lcv++) {
                         r.setInputs(inputSets.get(lcv));
                         diff = diff.add(r.getOutput().subtract(targets.get(lcv)));
                     }
-                    System.out.println("AvgDiff=" + diff.doubleValue()
-                            / (1.0 * inputSets.size()));
-                    System.out.println("Current learning constant: "
-                            + learningConstant);
-                    System.out.println("Time elapsed (s): "
-                            + (System.currentTimeMillis() - start) / 1000.0);
-                    System.out.println("");
+                    log.info("AvgDiff={}", diff.doubleValue() / (1.0 * inputSets.size()));
+                    log.info("Current learning constant: {}", learningConstant);
+                    log.info("Time elapsed (s): {}", (System.currentTimeMillis() - start) / 1000.0);
+                    log.info("");
                 }
                 lastScore = BigDecimal.valueOf(-1.0).multiply(score);
                 if (score.max(BigDecimal.valueOf(-1.0).multiply(cutoff)).equals(score)) {
@@ -289,24 +288,23 @@ public class PatternParallelRectNet extends RectNetFixed {
         if (verbose) {
             // Information about performance and training.
             if (brokeAtPerfCutoff) {
-                System.out.println("Performance cutoff hit.");
+                log.info("Performance cutoff hit.");
             } else {
-                System.out.println("Training round limit reached.");
+                log.info("Training round limit reached.");
             }
-            System.out.println("Rounds trained: " + i);
-            System.out.println("Final score of " + -1 * score.doubleValue());
-            System.out.println("Time elapsed (ms): "
-                    + ((System.currentTimeMillis() - start)));
+            log.info("Rounds trained: {}", i);
+            log.info("Final score of {}", -1 * score.doubleValue());
+            log.info("Time elapsed (ms): {}", ((System.currentTimeMillis() - start)));
             // Results
-            System.out.println("-------------------------");
-            // System.out.println("Test Results: ");
+            log.info("-------------------------");
+            // log.info("Test Results: ");
             for (int lcv = 0; lcv < inputSets.size(); lcv++) {
                 r.setInputs(inputSets.get(lcv));
-                // System.out.println("Input " + lcv);
-                // System.out.println("\tTarget: " + targets.get(lcv));
-                // System.out.println("\tActual: " + r.getOutput());
+                // log.info("Input " + lcv);
+                // log.info("\tTarget: " + targets.get(lcv));
+                // log.info("\tActual: " + r.getOutput());
             }
-            // System.out.println("-------------------------");
+            // log.info("-------------------------");
         }
         return r;
     }
@@ -322,7 +320,7 @@ public class PatternParallelRectNet extends RectNetFixed {
     public static PatternParallelRectNet loadNet(String fileName) {
         boolean valid = Net.validateAUGs(fileName);
         if (!valid) {
-            System.err.println("File not valid format.");
+            log.error("File not valid format.");
             throw new RuntimeException("File not valid format");
         }
         // Now we need to pull information out of the augsave file.
@@ -344,10 +342,10 @@ public class PatternParallelRectNet extends RectNetFixed {
                 side = Integer.valueOf(size[1]);
                 depth = Integer.valueOf(size[0]);
             } catch (Exception e) {
-                System.err.println("Loading failed at line: " + lineNumber);
+                log.error("Loading failed at line: " + lineNumber);
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             throw new RuntimeException("Failed to load file");
         }
         PatternParallelRectNet net = new PatternParallelRectNet(depth, side);
@@ -377,11 +375,11 @@ public class PatternParallelRectNet extends RectNetFixed {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err.println("Loading failed at line: " + lineNumber);
+                    log.error("Loading failed at line: {}", lineNumber);
                 }
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             throw new RuntimeException("Failed to load file");
         }
         return net;
@@ -400,11 +398,9 @@ public class PatternParallelRectNet extends RectNetFixed {
             r = PatternParallelRectNet.trainFile(trainingFile, 4, false, savedFile, true);
             RectNetFixed.testNet(testFile, r, true);
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.error("Training failed", e);
         } catch (ExecutionException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.error("Training failed", e);
         }
 
         /*r = PatternParallelRectNet.loadNet(savedFile);

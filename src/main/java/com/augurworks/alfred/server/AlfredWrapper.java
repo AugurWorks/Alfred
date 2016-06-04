@@ -10,6 +10,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -27,6 +29,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class AlfredWrapper {
+
+    Logger log = LoggerFactory.getLogger(AlfredWrapper.class);
 
     private final ExecutorService exec;
     private final Map<String, TrainStatus> jobStatusByFileName;
@@ -71,7 +75,7 @@ public class AlfredWrapper {
         try {
             exec.awaitTermination(timeout, unit);
         } catch (InterruptedException e) {
-            System.err.println("Interrupted while terminating. Will shutdown now.");
+            log.error("Interrupted while terminating. Will shutdown now.");
             throw new IllegalStateException("Interrupted while terminating. Will shutdown now.");
         }
     }
@@ -101,13 +105,13 @@ public class AlfredWrapper {
     public void cancelJob(String fileName) {
         Future<?> future = futuresByFileName.get(fileName);
         if (future != null) {
-            System.out.println("Attemping to cancel job for file " + fileName);
+            log.info("Attemping to cancel job for file {}", fileName);
             // job status will be updated in finally block of train callable
             future.cancel(true);
             futuresByFileName.remove(fileName);
         } else {
-            System.err.println("Unable to find job with name " + fileName);
-            System.err.println("Valid names are " + futuresByFileName.keySet());
+            log.error("Unable to find job with name {}", fileName);
+            log.error("Valid names are {}", futuresByFileName.keySet());
         }
     }
 
@@ -149,8 +153,7 @@ public class AlfredWrapper {
                     jobStatusByFileName.put(name, TrainStatus.COMPLETE);
                     return net;
                 } catch (Exception t) {
-                    LoggingHelper.error("Exception caught during evaluation of " + name, logLocation);
-                    t.printStackTrace();
+                    LoggingHelper.error("Exception caught during evaluation of " + name, logLocation, t);
                 } finally {
                     LoggingHelper.flushAndCloseQuietly(logLocation);
                     semaphore.release();
@@ -167,7 +170,7 @@ public class AlfredWrapper {
             new File("logs").mkdir();
             return new PrintWriter(new BufferedWriter(new FileWriter(new File("logs/" + name + ".log"))));
         } catch (IOException e) {
-            System.err.println("Unable to create log file for " + name);
+            log.error("Unable to create log file for {}", name);
             return null;
         }
     }

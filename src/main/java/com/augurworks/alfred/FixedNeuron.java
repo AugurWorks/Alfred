@@ -1,12 +1,16 @@
 package com.augurworks.alfred;
 
+import com.augurworks.alfred.util.BigDecimals;
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 
-import org.apache.commons.lang3.Validate;
-
-import com.augurworks.alfred.util.BigDecimals;
-
 public class FixedNeuron implements Input {
+
+    Logger log = LoggerFactory.getLogger(FixedNeuron.class);
+
     private BigDecimal[] weights;
     private Input[] inputs;
     private String name;
@@ -61,7 +65,7 @@ public class FixedNeuron implements Input {
         Validate.isTrue(numInputsFilled < this.numInputs);
         Validate.isTrue(this.numInputsFilled >= 0);
         if (numInputsFilled >= this.numInputs) {
-            System.err.println("Too many inputs added to neuron");
+            log.error("Too many inputs added to neuron");
             throw new IllegalStateException("Too many inputs added to neuron");
         }
         this.inputs[numInputsFilled] = n;
@@ -82,7 +86,7 @@ public class FixedNeuron implements Input {
         Validate.isTrue(index >= 0);
         Validate.isTrue(index < this.numInputs);
         if (index < 0 || index >= this.numInputs) {
-            System.err.println("Index out of accepted range.");
+            log.error("Index out of accepted range.");
             throw new IllegalArgumentException("Index out of range");
         }
         this.weights[index] = this.weights[index].add(w);
@@ -101,7 +105,7 @@ public class FixedNeuron implements Input {
         Validate.isTrue(index >= 0);
         Validate.isTrue(index < this.numInputs);
         if (index < 0 || index >= this.numInputs) {
-            System.err.println("Index out of accepted range.");
+            log.error("Index out of accepted range.");
             throw new IllegalArgumentException("Index out of range");
         }
         this.weights[index] = w;
@@ -187,7 +191,7 @@ public class FixedNeuron implements Input {
         Validate.isTrue(index >= 0);
         Validate.isTrue(index < this.numInputs);
         if (index < 0 || index >= this.numInputs) {
-            System.err.println("Index out of accepted range.");
+            log.error("Index out of accepted range.");
             throw new IllegalArgumentException("Index out of accepted range.");
         }
         return this.weights[index];
