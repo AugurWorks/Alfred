@@ -10,6 +10,7 @@ import com.augurworks.alfred.util.TimeUtils;
 import com.google.common.base.Throwables;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +21,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -595,6 +597,9 @@ public class RectNetFixed extends Net {
             throw new IllegalStateException("Unable to train file " + name + "!");
         }
         NetTrainSpecification netSpec = parseLines(trainLines, sfType, verbose);
+        MDC.put("performanceCutoff", netSpec.getPerformanceCutoff());
+        MDC.put("learningConstant", netSpec.getLearningConstant());
+        MDC.put("minTrainingRounds", netSpec.getMinTrainingRounds());
         RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide(), logOutputFile);
         net.setData(netSpec.getNetData());
         net.setTimingInfo(TimingInfo.withDuration(trainingTimeLimitMillis));
@@ -654,15 +659,17 @@ public class RectNetFixed extends Net {
                 break;
             }
 
-            if (fileIteration % 500 == 0) {
-                LoggingHelper.out("Net " + name + " has trained for " + fileIteration + " rounds", logOutputFile);
+            if (fileIteration % 100 == 0) {
+                MDC.put("netScore", score.round(new MathContext(4)).toString());
                 double rmsError = computeRmsError(net, inputsAndTargets);
+                LoggingHelper.out("Net " + name + " has trained for " + fileIteration + " rounds, RMS Error: " + rmsError, logOutputFile);
                 stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
                         netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
                         trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
             }
 
         }
+        MDC.put("netScore", score.round(new MathContext(4)).toString());
         if (trainingStats.brokeAtLocalMax) {
             long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
             long timeRemaining = trainingTimeLimitMillis - timeExpired;

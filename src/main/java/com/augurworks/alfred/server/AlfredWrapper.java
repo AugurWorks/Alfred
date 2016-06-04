@@ -154,7 +154,7 @@ public class AlfredWrapper {
                                                           5,
                                                           logLocation,
                                                           stats);
-                    LoggingHelper.out("Training complete for " + name + " after " + TimeUtils.formatTimeSince(startTime), logLocation);
+                    LoggingHelper.out("Training complete for " + name + " after " + TimeUtils.formatTimeSince(startTime) + " because of " + net.getTrainingSummary().getStopReason().name(), logLocation);
                     jobStatusByFileName.put(name, TrainStatus.COMPLETE);
                     return net;
                 } catch (Exception t) {

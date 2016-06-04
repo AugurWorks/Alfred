@@ -35,14 +35,14 @@ public class AlfredEndpoint {
     @RequestMapping(value = "/status/{id}", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody TrainStatus getStatus(@PathVariable String id) {
         MDC.put("netId", id);
-        log.info("Getting status for {}", id);
+        log.debug("Getting status for {}", id);
         return service.getStatus(id);
     }
 
     @RequestMapping(value = "/result/{id}", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody String getResult(@PathVariable String id) {
         MDC.put("netId", id);
-        log.info("Getting result for {}", id);
+        log.debug("Getting result for {}", id);
         TrainStatus status = getStatus(id);
         if (status != TrainStatus.COMPLETE) {
             return "IN_PROGRESS";
@@ -65,14 +65,14 @@ public class AlfredEndpoint {
     @RequestMapping(value = "/logs/{id}", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody String getLogs(@PathVariable String id) throws IOException {
         MDC.put("netId", id);
-        log.info("Getting logs for {}", id);
+        log.debug("Getting logs for {}", id);
         return new String(Files.readAllBytes(Paths.get("logs/" + id + ".log")));
     }
 
     @ApiIgnore
     @RequestMapping(value="/", method = RequestMethod.GET)
     public @ResponseBody ModelAndView root() {
-        log.info("Home page requested");
+        log.debug("Home page requested");
         return new ModelAndView(
                 new RedirectView("/swagger-ui.html")
         );
