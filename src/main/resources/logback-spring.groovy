@@ -5,13 +5,14 @@ import ch.qos.logback.more.appenders.DataFluentAppender
 import static ch.qos.logback.classic.Level.INFO
 
 appender("FLUENTD", DataFluentAppender) {
-    tag = "alfred"
     label = "logback"
-    remoteHost = "localhost"
+    remoteHost = System.getenv('FLUENTD_HOST')
     port = 24224
     maxQueueSize = 999
     additionalFields = [
-        function: "alfred"
+        function: "ALF",
+        hostname: System.getenv('HOSTNAME') ?: InetAddress.getLocalHost().getHostName(),
+        ip: InetAddress.getLocalHost().getHostAddress()
     ]
 }
 
@@ -20,4 +21,4 @@ appender("STDOUT", ConsoleAppender) {
         pattern = "%date [%thread] %-5level %logger{15}#%line %msg %n"
     }
 }
-root(INFO, ["STDOUT", "FLUENTD"])
+root(INFO, System.getenv('FLUENTD_HOST') ? ["STDOUT", "FLUENTD"] : ["STDOUT"])
