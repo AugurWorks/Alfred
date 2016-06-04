@@ -10,6 +10,9 @@ import com.augurworks.alfred.util.TimeUtils;
 import com.google.common.base.Throwables;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.log4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
@@ -18,6 +21,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +37,9 @@ import java.util.List;
  *
  */
 public class RectNetFixed extends Net {
+
+    static Logger log = LoggerFactory.getLogger(RectNetFixed.class);
+
     private static final double NEGATIVE_INFINITY = -1000000;
     public static final int DEFAULT_RETRIES = 5;
     // Inputs to network
@@ -385,7 +392,7 @@ public class RectNetFixed extends Net {
         try {
             FileUtils.writeStringToFile(new File(filename), result);
         } catch (Throwable t) {
-            System.err.println("Unable to write to file " + filename);
+            log.error("Unable to write to file {}", filename);
             t.printStackTrace();
         }
     }
@@ -581,6 +588,7 @@ public class RectNetFixed extends Net {
                                      int triesRemaining,
                                      PrintWriter logOutputFile,
                                      StatsTracker stats) throws InterruptedException {
+
         if (trainingTimeLimitMillis <= 0) {
             LoggingHelper.out("Training timeout was " + trainingTimeLimitMillis +
                     ", which is <= 0, so jobs will not time out.", logOutputFile);
@@ -589,6 +597,9 @@ public class RectNetFixed extends Net {
             throw new IllegalStateException("Unable to train file " + name + "!");
         }
         NetTrainSpecification netSpec = parseLines(trainLines, sfType, verbose);
+        MDC.put("performanceCutoff", netSpec.getPerformanceCutoff());
+        MDC.put("learningConstant", netSpec.getLearningConstant());
+        MDC.put("minTrainingRounds", netSpec.getMinTrainingRounds());
         RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide(), logOutputFile);
         net.setData(netSpec.getNetData());
         net.setTimingInfo(TimingInfo.withDuration(trainingTimeLimitMillis));
@@ -648,15 +659,17 @@ public class RectNetFixed extends Net {
                 break;
             }
 
-            if (fileIteration % 500 == 0) {
-                LoggingHelper.out("Net " + name + " has trained for " + fileIteration + " rounds", logOutputFile);
+            if (fileIteration % 100 == 0) {
+                MDC.put("netScore", score.round(new MathContext(4)).toString());
                 double rmsError = computeRmsError(net, inputsAndTargets);
+                LoggingHelper.out("Net " + name + " has trained for " + fileIteration + " rounds, RMS Error: " + rmsError, logOutputFile);
                 stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
                         netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
                         trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
             }
 
         }
+        MDC.put("netScore", score.round(new MathContext(4)).toString());
         if (trainingStats.brokeAtLocalMax) {
             long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
@@ -694,14 +707,14 @@ public class RectNetFixed extends Net {
 
     public static NetTrainSpecification parseFile(File file, ScaleFunctionType sfType, boolean verbose) {
         if (!Net.validateAUGt(file.getName())) {
-            System.err.println("File not valid format.");
+            log.error("File not valid format.");
             throw new IllegalArgumentException("File not valid");
         }
         try {
             List<String> fileLines = FileUtils.readLines(file);
             return parseLines(fileLines, sfType, verbose);
         } catch (IOException e) {
-            System.err.println("Unable to parse file " + file);
+            log.error("Unable to parse file {}", file);
             e.printStackTrace();
             throw Throwables.propagate(e);
         }
@@ -788,7 +801,7 @@ public class RectNetFixed extends Net {
     public static void saveNet(String fileName, RectNetFixed net) {
         try {
             if (!(fileName.toLowerCase().endsWith(".augsave"))) {
-                System.err.println("Output file name to save to should end in .augsave");
+                log.error("Output file name to save to should end in .augsave");
                 return;
             }
             PrintWriter out = new PrintWriter(new FileWriter(fileName));
@@ -811,7 +824,7 @@ public class RectNetFixed extends Net {
             }
             out.close();
         } catch (IOException e) {
-            System.err.println("Error occured opening file to saveNet");
+            log.error("Error occured opening file to saveNet");
             throw new IllegalArgumentException("Could not open file");
         }
     }
@@ -827,7 +840,7 @@ public class RectNetFixed extends Net {
     public static RectNetFixed loadNet(String fileName) {
         boolean valid = Net.validateAUGs(fileName);
         if (!valid) {
-            System.err.println("File not valid format.");
+            log.error("File not valid format.");
             throw new RuntimeException("File not valid format");
         }
         // Now we need to pull information out of the augsave file.
@@ -849,10 +862,10 @@ public class RectNetFixed extends Net {
                 side = Integer.valueOf(size[1]);
                 depth = Integer.valueOf(size[0]);
             } catch (Exception e) {
-                System.err.println("Loading failed at line: " + lineNumber);
+                log.error("Loading failed at line: " + lineNumber);
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             throw new RuntimeException("Failed to load file");
         }
         RectNetFixed net = new RectNetFixed(depth, side, null);
@@ -882,11 +895,11 @@ public class RectNetFixed extends Net {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err.println("Loading failed at line: " + lineNumber);
+                    log.error("Loading failed at line: " + lineNumber);
                 }
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             throw new RuntimeException("Failed to load file");
         }
         return net;
@@ -900,7 +913,7 @@ public class RectNetFixed extends Net {
             boolean verbose) {
         boolean valid = Net.validateAUGTest(fileName, r.y);
         if (!valid) {
-            System.err.println("File not valid format.");
+            log.error("File not valid format.");
             throw new RuntimeException("File not valid format");
         }
         // Now we need to pull information out of the augtrain file.
@@ -946,12 +959,11 @@ public class RectNetFixed extends Net {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err
-                            .println("Training failed at line: " + lineNumber);
+                    log.error("Training failed at line: " + lineNumber);
                 }
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+           log.error("IOException: %s%n", x);
             System.exit(1);
         }
         BigDecimal score = BigDecimal.ZERO;
@@ -962,13 +974,13 @@ public class RectNetFixed extends Net {
             score = score.add(diff.multiply(diff));
         }
         if (verbose) {
-            System.out.println("Final score of " + score.doubleValue()
+            log.info("Final score of {}", score.doubleValue()
                     / (1.0 * inputSets.size()));
             // Results
 
-            System.out.println("-------------------------");
-            System.out.println("Test Results: ");
-            System.out.println("Actual, Prediction");
+            log.info("-------------------------");
+            log.info("Test Results: ");
+            log.info("Actual, Prediction");
             score = BigDecimal.ZERO;
             BigDecimal score2 = BigDecimal.ZERO;
             for (int lcv = 0; lcv < inputSets.size(); lcv++) {
@@ -980,16 +992,16 @@ public class RectNetFixed extends Net {
                 BigDecimal tempOutput = (r.getOutput().subtract(maxMinNums[3])).multiply(
                         (maxMinNums[0].subtract(maxMinNums[1]))).divide(
                         (maxMinNums[2].subtract(maxMinNums[3])), BigDecimals.MATH_CONTEXT).add(maxMinNums[1]);
-                System.out.println(tempTarget + "," + tempOutput);
+                log.info(tempTarget + "," + tempOutput);
                 score = score.add(tempTarget.subtract(tempOutput).abs());
                 BigDecimal diff = tempTarget.subtract(tempOutput);
                 score2 = score2.add(diff.multiply(diff));
             }
             score = score.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
             score2 = score2.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
-            System.out.println("-------------------------");
-            System.out.println("Average error=" + score);
-            System.out.println("Average squared error=" + score2);
+            log.info("-------------------------");
+            log.info("Average error={}", score);
+            log.info("Average squared error={}", score2);
         }
         return score.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
     }
@@ -1005,7 +1017,7 @@ public class RectNetFixed extends Net {
             boolean verbose, String saveFile) {
         /*
          * boolean valid = Net.validateAUGPred(predFile, r.y); if (!valid) {
-         * System.err.println("File not valid format."); System.exit(1); }
+         * log.error("File not valid format."); System.exit(1); }
          */
         // Now we need to pull information out of the augtrain file.
         Charset charset = Charset.forName("US-ASCII");
@@ -1031,7 +1043,7 @@ public class RectNetFixed extends Net {
                         boolean valid = Net.validateAUGPred(predFile,
                                 lineSplit.length);
                         if (!valid) {
-                            System.err.println("File not valid format.");
+                            log.error("File not valid format.");
                             System.exit(1);
                         }
                         BigDecimal[] input = new BigDecimal[lineSplit.length];
@@ -1045,12 +1057,11 @@ public class RectNetFixed extends Net {
                     }
                     lineNumber++;
                 } catch (Exception e) {
-                    System.err
-                            .println("Training failed at line: " + lineNumber);
+                    log.error("Training failed at line: {}", lineNumber);
                 }
             }
         } catch (IOException x) {
-            System.err.format("IOException: %s%n", x);
+            log.error("IOException: %s%n", x);
             System.exit(1);
         }
         r.setInputs(inputSets.get(0));
@@ -1058,8 +1069,8 @@ public class RectNetFixed extends Net {
         BigDecimal second = maxNum.subtract(minNum);
         BigDecimal third = mx.subtract(mn);
         BigDecimal scaledValue = first.divide(second, BigDecimals.MATH_CONTEXT).multiply(third).add(mn);
-        System.out.println("Today's price is $" + today);
-        System.out.println("Tomorrow's price/change predicted to be $" + scaledValue);
+        log.info("Today's price is ${}", today);
+        log.info("Tomorrow's price/change predicted to be ${}", scaledValue);
         return scaledValue;
     }
 
