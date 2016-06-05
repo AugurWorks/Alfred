@@ -7,8 +7,6 @@ import com.augurworks.alfred.stats.StatsTracker;
 import com.augurworks.alfred.stats.StatsTracker.Snapshot;
 import com.augurworks.alfred.util.BigDecimals;
 import com.augurworks.alfred.util.TimeUtils;
-import com.google.common.base.Throwables;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.log4j.MDC;
 import org.slf4j.Logger;
@@ -16,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -41,7 +38,6 @@ public class RectNetFixed extends Net {
     static Logger log = LoggerFactory.getLogger(RectNetFixed.class);
 
     private static final double NEGATIVE_INFINITY = -1000000;
-    public static final int DEFAULT_RETRIES = 5;
     // Inputs to network
     protected InputImpl[] inputs;
     // Every neuron with the same i is in the
@@ -387,16 +383,6 @@ public class RectNetFixed extends Net {
         return sb.toString();
     }
 
-    public static void writeAugoutFile(String filename, RectNetFixed net) {
-        String result = getAugout(net);
-        try {
-            FileUtils.writeStringToFile(new File(filename), result);
-        } catch (Throwable t) {
-            log.error("Unable to write to file {}", filename);
-            t.printStackTrace();
-        }
-    }
-
     private static void writePredictionLine(StringBuilder sb, InputsAndTarget predictionDatum, RectNetFixed net) {
         sb.append(predictionDatum.getDate()).append(" ");
         sb.append("NULL").append(" ");
@@ -488,10 +474,10 @@ public class RectNetFixed extends Net {
         for (int j = 0; j < y; j++) {
             deltas[this.x][j] = deltaF;
         }
-        int leftCol = 0;
-        int leftRow = 0;
-        int rightCol = 0;
-        int rightRow = 0;
+        int leftCol;
+        int leftRow;
+        int rightCol;
+        int rightRow;
         for (leftCol = this.x - 1; leftCol >= 0; leftCol--) {
             rightCol = leftCol + 1;
             for (leftRow = 0; leftRow < this.y; leftRow++) {
@@ -705,21 +691,6 @@ public class RectNetFixed extends Net {
         }
     }
 
-    public static NetTrainSpecification parseFile(File file, ScaleFunctionType sfType, boolean verbose) {
-        if (!Net.validateAUGt(file.getName())) {
-            log.error("File not valid format.");
-            throw new IllegalArgumentException("File not valid");
-        }
-        try {
-            List<String> fileLines = FileUtils.readLines(file);
-            return parseLines(fileLines, sfType, verbose);
-        } catch (IOException e) {
-            log.error("Unable to parse file {}", file);
-            e.printStackTrace();
-            throw Throwables.propagate(e);
-        }
-    }
-
     public static NetTrainSpecification parseLines(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
         NetTrainSpecification.Builder netTrainingSpecBuilder = new Builder();
         netTrainingSpecBuilder.scaleFunctionType(sfType);
@@ -830,82 +801,6 @@ public class RectNetFixed extends Net {
     }
 
     /**
-     * Load a neural network from a .augsave file
-     *
-     * @author TheConnMan
-     * @param fileName
-     *            File path to an .augsave file containing a neural network
-     * @return Neural network from the .augsave file
-     */
-    public static RectNetFixed loadNet(String fileName) {
-        boolean valid = Net.validateAUGs(fileName);
-        if (!valid) {
-            log.error("File not valid format.");
-            throw new RuntimeException("File not valid format");
-        }
-        // Now we need to pull information out of the augsave file.
-        Charset charset = Charset.forName("US-ASCII");
-        Path file = Paths.get(fileName);
-        String line = null;
-        int lineNumber = 1;
-        String[] lineSplit;
-        String[] edges;
-        int side = 0;
-        int depth = 0;
-        int curCol = 0;
-        int curRow = 0;
-        try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            line = reader.readLine();
-            try {
-                lineSplit = line.split(" ");
-                String[] size = lineSplit[1].split(",");
-                side = Integer.valueOf(size[1]);
-                depth = Integer.valueOf(size[0]);
-            } catch (Exception e) {
-                log.error("Loading failed at line: " + lineNumber);
-            }
-        } catch (IOException x) {
-            log.error("IOException: %s%n", x);
-            throw new RuntimeException("Failed to load file");
-        }
-        RectNetFixed net = new RectNetFixed(depth, side, null);
-        try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            while ((line = reader.readLine()) != null) {
-                try {
-                    lineSplit = line.split(" ");
-                    switch (lineNumber) {
-                    case 1:
-                        break;
-                    case 2:
-                        String outputs[] = lineSplit[1].split(",");
-                        for (int edgeNum = 0; edgeNum < outputs.length; edgeNum++) {
-                            net.output.setWeight(edgeNum,
-                                    BigDecimal.valueOf(Double.parseDouble(outputs[edgeNum])));
-                        }
-                        break;
-                    default:
-                        curCol = Integer.valueOf(lineSplit[0]);
-                        curRow = (lineNumber - 3) % side;
-                        edges = lineSplit[1].split(",");
-                        for (int edgeNum = 0; edgeNum < edges.length; edgeNum++) {
-                            net.neurons[curCol][curRow].setWeight(edgeNum,
-                                    BigDecimal.valueOf(Double.parseDouble(edges[edgeNum])));
-                        }
-                        break;
-                    }
-                    lineNumber++;
-                } catch (Exception e) {
-                    log.error("Loading failed at line: " + lineNumber);
-                }
-            }
-        } catch (IOException x) {
-            log.error("IOException: %s%n", x);
-            throw new RuntimeException("Failed to load file");
-        }
-        return net;
-    }
-
-    /**
      * @param fileName
      * @param r
      */
@@ -1004,74 +899,6 @@ public class RectNetFixed extends Net {
             log.info("Average squared error={}", score2);
         }
         return score.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
-    }
-
-    /**
-     *
-     * @param trainingFile
-     * @param predFile
-     * @param verbose
-     * @return
-     */
-    public static BigDecimal predictTomorrow(RectNetFixed r, String trainingFile, String predFile,
-            boolean verbose, String saveFile) {
-        /*
-         * boolean valid = Net.validateAUGPred(predFile, r.y); if (!valid) {
-         * log.error("File not valid format."); System.exit(1); }
-         */
-        // Now we need to pull information out of the augtrain file.
-        Charset charset = Charset.forName("US-ASCII");
-        Path file = Paths.get(predFile);
-        String line = null;
-        int lineNumber = 1;
-        String[] lineSplit;
-        BigDecimal maxNum = BigDecimal.ONE, minNum = BigDecimal.ONE, mx = BigDecimal.ONE, mn = BigDecimal.ONE, today = BigDecimal.ZERO;
-        ArrayList<BigDecimal[]> inputSets = new ArrayList<BigDecimal[]>();
-        try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            while ((line = reader.readLine()) != null) {
-                try {
-                    lineSplit = line.split(",");
-                    switch (lineNumber) {
-                    case 1:
-                        mx = BigDecimal.valueOf(Double.valueOf(lineSplit[0]));
-                        mn = BigDecimal.valueOf(Double.valueOf(lineSplit[1]));
-                        maxNum = BigDecimal.valueOf(Double.valueOf(lineSplit[2]));
-                        minNum = BigDecimal.valueOf(Double.valueOf(lineSplit[3]));
-                        today = BigDecimal.valueOf(Double.valueOf(lineSplit[4]));
-                        break;
-                    case 3:
-                        boolean valid = Net.validateAUGPred(predFile,
-                                lineSplit.length);
-                        if (!valid) {
-                            log.error("File not valid format.");
-                            System.exit(1);
-                        }
-                        BigDecimal[] input = new BigDecimal[lineSplit.length];
-                        for (int i = 0; i < lineSplit.length; i++) {
-                            input[i] = BigDecimal.valueOf(Double.valueOf(lineSplit[i]));
-                        }
-                        inputSets.add(input);
-                        break;
-                    default:
-                        break;
-                    }
-                    lineNumber++;
-                } catch (Exception e) {
-                    log.error("Training failed at line: {}", lineNumber);
-                }
-            }
-        } catch (IOException x) {
-            log.error("IOException: %s%n", x);
-            System.exit(1);
-        }
-        r.setInputs(inputSets.get(0));
-        BigDecimal first = r.getOutput().subtract(minNum);
-        BigDecimal second = maxNum.subtract(minNum);
-        BigDecimal third = mx.subtract(mn);
-        BigDecimal scaledValue = first.divide(second, BigDecimals.MATH_CONTEXT).multiply(third).add(mn);
-        log.info("Today's price is ${}", today);
-        log.info("Tomorrow's price/change predicted to be ${}", scaledValue);
-        return scaledValue;
     }
 
     private void out(String message) {
