@@ -117,12 +117,11 @@ public class AlfredWrapper {
     }
 
     public String printStatus() {
-        StringBuilder sb = new StringBuilder("Server Status:\n");
-        sb.append("  Jobs in progress : " + usage.getJobsInProgress()).append("\n");
-        sb.append("  Jobs submitted   : " + usage.getJobsSubmitted()).append("\n");
-        sb.append("  Jobs completed   : " + usage.getJobsCompleted()).append("\n");
-        sb.append(getCurrentJobStatusesPretty());
-        return sb.toString();
+        String sb = "Server Status:\n" + "  Jobs in progress : " + usage.getJobsInProgress() + "\n" +
+                "  Jobs submitted   : " + usage.getJobsSubmitted() + "\n" +
+                "  Jobs completed   : " + usage.getJobsCompleted() + "\n" +
+                getCurrentJobStatusesPretty();
+        return sb;
     }
 
     private Callable<RectNetFixed> getTrainCallable(final String name, final String augtrain) {

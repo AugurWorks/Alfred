@@ -1,8 +1,8 @@
 package com.augurworks.alfred;
 
-import java.math.BigDecimal;
-
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
+
+import java.math.BigDecimal;
 
 public class NetTrainSpecification {
 
@@ -184,9 +184,7 @@ public class NetTrainSpecification {
                 return false;
         } else if (!performanceCutoff.equals(other.performanceCutoff))
             return false;
-        if (side != other.side)
-            return false;
-        return true;
+        return side == other.side;
     }
 
     @Override

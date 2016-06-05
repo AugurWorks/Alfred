@@ -146,7 +146,7 @@ public abstract class Net {
                             throw new RuntimeException();
                         if (!(Double.valueOf(size[2]) > 0))
                             throw new RuntimeException();
-                        if (!(Double.valueOf(size[3]) != null))
+                        if (Double.valueOf(size[3]) == null)
                             throw new RuntimeException();
                         if (!(Double.valueOf(size[4]) > 0))
                             throw new RuntimeException();
@@ -182,7 +182,7 @@ public abstract class Net {
                             throw new RuntimeException();
                         break;
                     default:
-                        if (!(Double.valueOf(lineSplit[0]) != null))
+                        if (Double.valueOf(lineSplit[0]) == null)
                             throw new RuntimeException();
                         size = lineSplit[1].split(",");
                         for (String s : size) {

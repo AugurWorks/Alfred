@@ -337,8 +337,7 @@ public class RectNetFixed extends Net {
             ins = outs;
             outs = new BigDecimal[this.y];
         }
-        BigDecimal d = this.output.getOutput(ins);
-        return d;
+        return this.output.getOutput(ins);
     }
 
     /**
@@ -704,8 +703,7 @@ public class RectNetFixed extends Net {
         while (fileLineIterator.hasNext()) {
             parseDataLine(netTrainingSpecBuilder, fileLineIterator);
         }
-        NetTrainSpecification netTrainingSpec = netTrainingSpecBuilder.build();
-        return netTrainingSpec;
+        return netTrainingSpecBuilder.build();
     }
 
     private void parseDataLine(
