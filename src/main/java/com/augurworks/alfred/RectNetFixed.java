@@ -367,7 +367,7 @@ public class RectNetFixed extends Net {
     /**
      * Denormalizes targets and estimates.
      */
-    public static String getAugout(RectNetFixed net) {
+    public String getAugout(RectNetFixed net) {
         StringBuilder sb = new StringBuilder();
         TrainingSummary summary = net.getTrainingSummary();
         sb.append("Training stop reason: ").append(summary.getStopReason().getExplanation()).append("\n");
@@ -535,7 +535,7 @@ public class RectNetFixed extends Net {
         return BigDecimal.valueOf(3).multiply(last).multiply(oneMinusLast).multiply(desiredMinusLast);
     }
 
-    private static class TrainingStats {
+    private class TrainingStats {
         public long startTime;
         public TrainingStopReason stopReason;
         public boolean brokeAtLocalMax;
@@ -565,7 +565,7 @@ public class RectNetFixed extends Net {
      * @return The trained neural network
      * @throws InterruptedException
      */
-    public static RectNetFixed train(String name,
+    public RectNetFixed train(String name,
                                      List<String> trainLines,
                                      boolean verbose,
                                      boolean testing,
@@ -661,7 +661,7 @@ public class RectNetFixed extends Net {
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
             LoggingHelper.out("Retraining net from file " + name + " with " +
                     TimeUtils.formatSeconds((int)timeRemaining/1000) + " remaining.", logOutputFile);
-            net = RectNetFixed.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile, stats);
+            net = this.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile, stats);
         }
         int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
         double rmsError = computeRmsError(net, inputsAndTargets);
@@ -674,7 +674,7 @@ public class RectNetFixed extends Net {
         return net;
     }
 
-    private static double computeRmsError(RectNetFixed net, List<InputsAndTarget> inputsAndTargets) {
+    private double computeRmsError(RectNetFixed net, List<InputsAndTarget> inputsAndTargets) {
         double totalRmsError = 0;
         for (int lcv = 0; lcv < inputsAndTargets.size(); lcv++) {
             InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
@@ -691,7 +691,7 @@ public class RectNetFixed extends Net {
         }
     }
 
-    public static NetTrainSpecification parseLines(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
+    public NetTrainSpecification parseLines(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
         NetTrainSpecification.Builder netTrainingSpecBuilder = new Builder();
         netTrainingSpecBuilder.scaleFunctionType(sfType);
         Validate.isTrue(augtrain.size() >= 4, "Cannot parse file with no data");
@@ -708,7 +708,7 @@ public class RectNetFixed extends Net {
         return netTrainingSpec;
     }
 
-    private static void parseDataLine(
+    private void parseDataLine(
             NetTrainSpecification.Builder netTrainingSpec,
             Iterator<String> fileLineIterator) {
         String dataLine = fileLineIterator.next();
@@ -730,7 +730,7 @@ public class RectNetFixed extends Net {
         }
     }
 
-    private static void parseTrainingInfoLine(
+    private void parseTrainingInfoLine(
             NetTrainSpecification.Builder netTrainingSpec,
             Iterator<String> fileLineIterator) {
         String trainingInfoLine = fileLineIterator.next();
@@ -749,7 +749,7 @@ public class RectNetFixed extends Net {
         netTrainingSpec.performanceCutoff(cutoff);
     }
 
-    private static void parseSizeLine(
+    private void parseSizeLine(
             NetTrainSpecification.Builder netTrainingSpec,
             Iterator<String> fileLineIterator) {
         String sizeLine = fileLineIterator.next();
@@ -769,7 +769,7 @@ public class RectNetFixed extends Net {
      * @param net
      *            Neural net to be saved
      */
-    public static void saveNet(String fileName, RectNetFixed net) {
+    public void saveNet(String fileName, RectNetFixed net) {
         try {
             if (!(fileName.toLowerCase().endsWith(".augsave"))) {
                 log.error("Output file name to save to should end in .augsave");
@@ -804,7 +804,7 @@ public class RectNetFixed extends Net {
      * @param fileName
      * @param r
      */
-    public static BigDecimal testNet(String fileName, RectNetFixed r,
+    public BigDecimal testNet(String fileName, RectNetFixed r,
             boolean verbose) {
         boolean valid = Net.validateAUGTest(fileName, r.y);
         if (!valid) {

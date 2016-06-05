@@ -64,6 +64,8 @@ public class PatternParallelRectNet extends RectNetFixed {
             log.error("File not valid format.");
             throw new RuntimeException("File not valid");
         }
+
+        RectNetFixed rectNetFixed = new RectNetFixed();
         // Now we need to pull information out of the augtrain file.
         Charset charset = Charset.forName("US-ASCII");
         Path file = Paths.get(fileName);
@@ -225,17 +227,17 @@ public class PatternParallelRectNet extends RectNetFixed {
                     BigDecimal diffCutoff2 = BigDecimal.valueOf(.05);
                     // bestCheck > -1.0 * score
                     if (bestCheck.max(BigDecimal.valueOf(-1.0).multiply(score)).equals(bestCheck)) {
-                        RectNetFixed.saveNet(saveFile, r);
+                        rectNetFixed.saveNet(saveFile, r);
                         if (testing) {
                             int idx = saveFile.replaceAll("\\\\", "/").lastIndexOf(
                                     "/");
                             int idx2 = saveFile.lastIndexOf(
                                             ".");
-                            testScore = RectNetFixed.testNet(
+                            testScore = rectNetFixed.testNet(
                                     saveFile.substring(0, idx + 1)
                                             + "OneThird.augtrain", r, verbose);
                             if (testScore.min(bestTestCheck).equals(testScore)) {
-                                RectNetFixed.saveNet(saveFile.substring(0, idx2)
+                                rectNetFixed.saveNet(saveFile.substring(0, idx2)
                                         + "Test.augsave", r);
                                 bestTestCheck = testScore;
                             }
@@ -396,7 +398,7 @@ public class PatternParallelRectNet extends RectNetFixed {
         PatternParallelRectNet r;
         try {
             r = PatternParallelRectNet.trainFile(trainingFile, 4, false, savedFile, true);
-            RectNetFixed.testNet(testFile, r, true);
+            new RectNetFixed().testNet(testFile, r, true);
         } catch (InterruptedException e) {
             log.error("Training failed", e);
         } catch (ExecutionException e) {

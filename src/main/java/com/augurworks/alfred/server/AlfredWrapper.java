@@ -145,7 +145,7 @@ public class AlfredWrapper {
                     LoggingHelper.out("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
                     long startTime = System.currentTimeMillis();
                     List<String> lines = Splitter.on("\n").splitToList(augtrain);
-                    RectNetFixed net = RectNetFixed.train(name,
+                    RectNetFixed net = new RectNetFixed().train(name,
                                                           lines,
                                                           prefs.getVerbose(),
                                                           false,
