@@ -23,11 +23,11 @@ public class PatternParallelNode extends RectNetFixed implements
      * Should be handed: 1) Training set 2) Number of rounds 3) Current net to
      * copy
      */
-    public PatternParallelNode(RectNetFixed r, BigDecimal[][] inpts,
+    public PatternParallelNode(RectNetFixed r, BigDecimal[][] inputs,
             BigDecimal[] desired, int iterations, BigDecimal learningConstant) {
         super(r.getX(), r.getY(), null);
         init(r);
-        this.trainingData = inpts;
+        this.trainingData = inputs;
         this.desired = desired;
         this.iterations = iterations;
         this.learningConstant = learningConstant;
@@ -51,12 +51,12 @@ public class PatternParallelNode extends RectNetFixed implements
         }
     }
 
-    public void train(BigDecimal[] inpts, BigDecimal desired, int iterations,
+    public void train(BigDecimal[] inputs, BigDecimal desired, int iterations,
             BigDecimal learningConstant, WeightDelta wd) {
         Validate.isTrue(iterations > 0);
         for (int lcv = 0; lcv < iterations; lcv++) {
             // Set the inputs
-            this.setInputs(inpts);
+            this.setInputs(inputs);
             // Compute the last node error
             BigDecimal deltaF = this.getOutputError(desired);
             if (verbose) {
@@ -143,13 +143,10 @@ public class PatternParallelNode extends RectNetFixed implements
         }
     }
 
-    public void train(BigDecimal[][] inpts, BigDecimal[] desired, int iterations,
+    public void train(BigDecimal[][] inputs, BigDecimal[] desired, int iterations,
             BigDecimal learningConstant, WeightDelta wd) {
-        for (int i = 0; i < inpts.length; i++) {
-            train(inpts[i], desired[i], iterations, learningConstant, wd);
-            //log.info("inpts: {}, {}", inpts[i][0], inpts[i][1]);
-            //log.info("desired: {}", desired[i]);
-            //log.info("");
+        for (int i = 0; i < inputs.length; i++) {
+            train(inputs[i], desired[i], iterations, learningConstant, wd);
         }
     }
 

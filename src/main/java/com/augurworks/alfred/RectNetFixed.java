@@ -79,7 +79,7 @@ public class RectNetFixed extends Net {
      */
     public RectNetFixed(int depth, int numInputs, PrintWriter logOutputStream) {
         if (depth < 1 || numInputs < 1) {
-            throw new IllegalArgumentException("Depth and numinputs must be >= 1");
+            throw new IllegalArgumentException("Depth and numInputs must be >= 1");
         }
         this.x = depth;
         this.y = numInputs;
@@ -100,7 +100,7 @@ public class RectNetFixed extends Net {
      */
     public RectNetFixed(int depth, int numInputs, boolean verbose) {
         if (depth < 1 || numInputs < 1) {
-            throw new IllegalArgumentException("Depth and numinputs must be >= 1");
+            throw new IllegalArgumentException("Depth and numInputs must be >= 1");
         }
         this.x = depth;
         this.y = numInputs;
@@ -304,16 +304,16 @@ public class RectNetFixed extends Net {
     }
 
     /**
-     * Sets the inputs of this network to the values given. Length of inpts must
+     * Sets the inputs of this network to the values given. Length of inputs must
      * be equal to the "height" of the network.
      *
-     * @param inpts
+     * @param inputs
      *            array of double to set as network inputs.
      */
-    public void setInputs(BigDecimal[] inpts) {
-        Validate.isTrue(inpts.length == this.y);
+    public void setInputs(BigDecimal[] inputs) {
+        Validate.isTrue(inputs.length == this.y);
         for (int j = 0; j < this.y; j++) {
-            this.inputs[j].setValue(inpts[j]);
+            this.inputs[j].setValue(inputs[j]);
         }
     }
 
@@ -343,9 +343,9 @@ public class RectNetFixed extends Net {
 
     /**
      * Trains the network on a given input with a given output the number of
-     * times specified by iterations. Trains via a backpropagation algorithm.
+     * times specified by iterations. Trains via a back-propagation algorithm.
      *
-     * @param inpts
+     * @param inputs
      *            input values for the network.
      * @param desired
      *            what the result of the network should be.
@@ -355,12 +355,12 @@ public class RectNetFixed extends Net {
      *            number of times to train the network.
      * @throws InterruptedException
      */
-    public void train(BigDecimal[] inpts, BigDecimal desired, int iterations,
+    public void train(BigDecimal[] inputs, BigDecimal desired, int iterations,
             BigDecimal learningConstant) throws InterruptedException {
         Validate.isTrue(iterations > 0);
-        Validate.isTrue(inpts.length == this.y);
+        Validate.isTrue(inputs.length == this.y);
         for (int lcv = 0; lcv < iterations && !hasTimeExpired(); lcv++) {
-            doIteration(inpts, desired, learningConstant);
+            doIteration(inputs, desired, learningConstant);
         }
     }
 
@@ -411,10 +411,10 @@ public class RectNetFixed extends Net {
         sb.append("\n");
     }
 
-    private void doIteration(BigDecimal[] inpts, BigDecimal desired, BigDecimal learningConstant) throws InterruptedException {
+    private void doIteration(BigDecimal[] inputs, BigDecimal desired, BigDecimal learningConstant) throws InterruptedException {
         checkInterrupted();
         // Set the inputs
-        setInputs(inpts);
+        setInputs(inputs);
         // Compute the last node error
         BigDecimal deltaF = getOutputError(desired);
         if (verbose) {
@@ -736,16 +736,16 @@ public class RectNetFixed extends Net {
         String trainingInfoLine = fileLineIterator.next();
         String[] trainingInfoLineSplit = trainingInfoLine.split(" ");
         trainingInfoLineSplit = trainingInfoLineSplit[1].split(",");
-        int rowIter = Integer.valueOf(trainingInfoLineSplit[0]);
-        int fileIter = Integer.valueOf(trainingInfoLineSplit[1]);
+        int rowInterations = Integer.valueOf(trainingInfoLineSplit[0]);
+        int fileIterations = Integer.valueOf(trainingInfoLineSplit[1]);
         BigDecimal learningConstant = BigDecimal.valueOf(Double.valueOf(trainingInfoLineSplit[2]));
         int minTrainingRounds = Integer.valueOf(trainingInfoLineSplit[3]);
         BigDecimal cutoff = BigDecimal.valueOf(Double.valueOf(trainingInfoLineSplit[4]));
 
         netTrainingSpec.minTrainingRounds(minTrainingRounds);
         netTrainingSpec.learningConstant(learningConstant);
-        netTrainingSpec.rowIterations(rowIter);
-        netTrainingSpec.fileIterations(fileIter);
+        netTrainingSpec.rowIterations(rowInterations);
+        netTrainingSpec.fileIterations(fileIterations);
         netTrainingSpec.performanceCutoff(cutoff);
     }
 
@@ -795,7 +795,7 @@ public class RectNetFixed extends Net {
             }
             out.close();
         } catch (IOException e) {
-            log.error("Error occured opening file to saveNet");
+            log.error("Error occurred opening file to saveNet");
             throw new IllegalArgumentException("Could not open file");
         }
     }
@@ -821,7 +821,7 @@ public class RectNetFixed extends Net {
         String[] size;
         ArrayList<BigDecimal[]> inputSets = new ArrayList<BigDecimal[]>();
         ArrayList<BigDecimal> targets = new ArrayList<BigDecimal>();
-        BigDecimal[] maxMinNums = new BigDecimal[4];
+        BigDecimal[] maxMinNumbers = new BigDecimal[4];
         try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
             while ((line = reader.readLine()) != null) {
                 try {
@@ -830,7 +830,7 @@ public class RectNetFixed extends Net {
                     case 1:
                         String[] temp = lineSplit[1].split(",");
                         for (int j = 0; j < 4; j++) {
-                            maxMinNums[j] = BigDecimal.valueOf(Double.valueOf(temp[j + 2]));
+                            maxMinNumbers[j] = BigDecimal.valueOf(Double.valueOf(temp[j + 2]));
                         }
                         break;
                     case 2:
@@ -881,12 +881,12 @@ public class RectNetFixed extends Net {
             for (int lcv = 0; lcv < inputSets.size(); lcv++) {
                 r.setInputs(inputSets.get(lcv));
 
-                BigDecimal tempTarget = (targets.get(lcv).subtract(maxMinNums[3])).multiply(
-                        (maxMinNums[0].subtract(maxMinNums[1]))).divide(
-                        (maxMinNums[2].subtract(maxMinNums[3])), BigDecimals.MATH_CONTEXT).add(maxMinNums[1]);
-                BigDecimal tempOutput = (r.getOutput().subtract(maxMinNums[3])).multiply(
-                        (maxMinNums[0].subtract(maxMinNums[1]))).divide(
-                        (maxMinNums[2].subtract(maxMinNums[3])), BigDecimals.MATH_CONTEXT).add(maxMinNums[1]);
+                BigDecimal tempTarget = (targets.get(lcv).subtract(maxMinNumbers[3])).multiply(
+                        (maxMinNumbers[0].subtract(maxMinNumbers[1]))).divide(
+                        (maxMinNumbers[2].subtract(maxMinNumbers[3])), BigDecimals.MATH_CONTEXT).add(maxMinNumbers[1]);
+                BigDecimal tempOutput = (r.getOutput().subtract(maxMinNumbers[3])).multiply(
+                        (maxMinNumbers[0].subtract(maxMinNumbers[1]))).divide(
+                        (maxMinNumbers[2].subtract(maxMinNumbers[3])), BigDecimals.MATH_CONTEXT).add(maxMinNumbers[1]);
                 log.info(tempTarget + "," + tempOutput);
                 score = score.add(tempTarget.subtract(tempOutput).abs());
                 BigDecimal diff = tempTarget.subtract(tempOutput);

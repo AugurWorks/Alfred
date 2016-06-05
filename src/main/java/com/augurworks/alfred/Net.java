@@ -286,7 +286,7 @@ public abstract class Net {
         return true;
     }
 
-    public static boolean validateAUGPred(String fileName, int size) {
+    public static boolean validateAUGPrediction(String fileName, int size) {
         if (!(fileName.toLowerCase().endsWith(".augpred"))) {
             log.error("Training file should end in .augpred");
             return false;

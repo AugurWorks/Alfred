@@ -106,7 +106,7 @@ public class AlfredWrapper {
     public void cancelJob(String fileName) {
         Future<?> future = futuresByFileName.get(fileName);
         if (future != null) {
-            log.info("Attemping to cancel job for file {}", fileName);
+            log.info("Attempting to cancel job for file {}", fileName);
             // job status will be updated in finally block of train callable
             future.cancel(true);
             futuresByFileName.remove(fileName);
