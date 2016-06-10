@@ -1,6 +1,7 @@
 package com.augurworks.alfred.messaging;
 
 import com.augurworks.alfred.config.RabbitMQConfig;
+import com.augurworks.alfred.server.AlfredService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -20,13 +21,16 @@ public class TrainingConsumer {
 
     Logger log = LoggerFactory.getLogger(TrainingConsumer.class);
 
+    private final AlfredService alfredService;
+
     private Channel trainingChannel;
     private Channel resultChannel;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
-    public TrainingConsumer(Channel trainingChannel, Channel resultChannel) {
+    public TrainingConsumer(AlfredService alfredService, Channel trainingChannel, Channel resultChannel) {
+        this.alfredService = alfredService;
         this.trainingChannel = trainingChannel;
         this.resultChannel = resultChannel;
     }
@@ -44,6 +48,17 @@ public class TrainingConsumer {
     }
 
     private void processMessage(TrainingMessage message) {
-        System.out.println(message);
+        String result = alfredService.trainSynchronous(message.getNetId(), message.getData());
+        sendResult(message.getNetId(), result);
+    }
+
+    private void sendResult(String netId, String result) {
+        log.debug("Sending message for net {}", netId);
+        TrainingMessage message = new TrainingMessage(netId, result);
+        try {
+            resultChannel.basicPublish("", RabbitMQConfig.RESULTS_CHANNEL, null, mapper.writeValueAsString(message).getBytes());
+        } catch (IOException e) {
+            log.error("An error occurred when publishing a message for net {}", netId, e);
+        }
     }
 }
