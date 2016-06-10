@@ -83,7 +83,7 @@ public class AlfredServiceImpl implements AlfredService {
         if (result == null || !result.isPresent()) {
             return "";
         } else {
-            return new RectNetFixed().getAugout(result.get());
+            return result.get().getAugout();
         }
     }
 

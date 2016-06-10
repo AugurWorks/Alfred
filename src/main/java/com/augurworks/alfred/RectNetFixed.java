@@ -366,44 +366,44 @@ public class RectNetFixed extends Net {
     /**
      * Denormalizes targets and estimates.
      */
-    public String getAugout(RectNetFixed net) {
+    public String getAugout() {
         StringBuilder sb = new StringBuilder();
-        TrainingSummary summary = net.getTrainingSummary();
+        TrainingSummary summary = this.getTrainingSummary();
         sb.append("Training stop reason: ").append(summary.getStopReason().getExplanation()).append("\n");
         sb.append("Time trained: ").append(summary.getSecondsElapsed()).append("\n");
         sb.append("Rounds trained: ").append(summary.getRoundsTrained()).append("\n");
         sb.append("RMS Error: ").append(summary.getRmsError()).append("\n");
-        for (InputsAndTarget trainDatum : net.getDataSpec().getTrainData()) {
-            writeDataLine(sb, trainDatum, net);
+        for (InputsAndTarget trainDatum : this.getDataSpec().getTrainData()) {
+            writeDataLine(sb, trainDatum);
         }
-        for (InputsAndTarget predictionDatum : net.getDataSpec().getPredictionData()) {
-            writePredictionLine(sb, predictionDatum, net);
+        for (InputsAndTarget predictionDatum : this.getDataSpec().getPredictionData()) {
+            writePredictionLine(sb, predictionDatum);
         }
         return sb.toString();
     }
 
-    private static void writePredictionLine(StringBuilder sb, InputsAndTarget predictionDatum, RectNetFixed net) {
+    private void writePredictionLine(StringBuilder sb, InputsAndTarget predictionDatum) {
         sb.append(predictionDatum.getDate()).append(" ");
         sb.append("NULL").append(" ");
 
-        net.setInputs(predictionDatum.getInputs());
-        BigDecimal trainedEstimate = net.getOutput();
-        trainedEstimate = net.getDataSpec().denormalize(trainedEstimate);
+        this.setInputs(predictionDatum.getInputs());
+        BigDecimal trainedEstimate = this.getOutput();
+        trainedEstimate = this.getDataSpec().denormalize(trainedEstimate);
         sb.append(trainedEstimate.doubleValue()).append(" ");
 
         sb.append("NULL").append("\n");
     }
 
-    private static void writeDataLine(StringBuilder sb, InputsAndTarget trainDatum, RectNetFixed net) {
+    private void writeDataLine(StringBuilder sb, InputsAndTarget trainDatum) {
         sb.append(trainDatum.getDate()).append(" ");
 
         BigDecimal target = trainDatum.getTarget();
-        target = net.getDataSpec().denormalize(target);
+        target = this.getDataSpec().denormalize(target);
         sb.append(target.doubleValue()).append(" ");
 
-        net.setInputs(trainDatum.getInputs());
-        BigDecimal trainedEstimate = net.getOutput();
-        trainedEstimate = net.getDataSpec().denormalize(trainedEstimate);
+        this.setInputs(trainDatum.getInputs());
+        BigDecimal trainedEstimate = this.getOutput();
+        trainedEstimate = this.getDataSpec().denormalize(trainedEstimate);
         sb.append(trainedEstimate.doubleValue()).append(" ");
 
         sb.append(Math.abs(target.doubleValue() - trainedEstimate.doubleValue()));
