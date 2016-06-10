@@ -125,48 +125,47 @@ public class AlfredWrapper {
     }
 
     private Callable<RectNetFixed> getTrainCallable(final String name, final String augtrain) {
-        return new Callable<RectNetFixed>() {
-            @Override
-            public RectNetFixed call() throws Exception {
-                MDC.put("netId", name);
-                MDC.put("trainingTimeLimitSec", timeoutSeconds);
-                MDC.put("scaleFunctionType", sfType.name());
+        return () -> trainSynchronous(name, augtrain);
+    }
 
-                usage.incrementJobsSubmitted();
-                jobStatusByFileName.put(name, TrainStatus.SUBMITTED);
-                PrintWriter logLocation = null;
-                try {
-                    semaphore.acquire();
-                    usage.incrementJobsInProgress();
-                    jobStatusByFileName.put(name, TrainStatus.IN_PROGRESS);
-                    logLocation = getLogLocation(name);
+    public RectNetFixed trainSynchronous(String netId, String augtrain) {
+        MDC.put("netId", netId);
+        MDC.put("trainingTimeLimitSec", timeoutSeconds);
+        MDC.put("scaleFunctionType", sfType.name());
 
-                    LoggingHelper.out("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
-                    long startTime = System.currentTimeMillis();
-                    List<String> lines = Splitter.on("\n").splitToList(augtrain);
-                    RectNetFixed net = new RectNetFixed().train(name,
-                                                          lines,
-                                                          prefs.getVerbose(),
-                                                          false,
-                                                          timeoutSeconds * 1000,
-                                                          sfType,
-                                                          5,
-                                                          logLocation,
-                                                          stats);
-                    LoggingHelper.out("Training complete for " + name + " after " + TimeUtils.formatTimeSince(startTime) + " because of " + net.getTrainingSummary().getStopReason().name(), logLocation);
-                    jobStatusByFileName.put(name, TrainStatus.COMPLETE);
-                    return net;
-                } catch (Exception t) {
-                    LoggingHelper.error("Exception caught during evaluation of " + name, logLocation, t);
-                } finally {
-                    LoggingHelper.flushAndCloseQuietly(logLocation);
-                    semaphore.release();
-                    usage.incrementJobsInProgress();
-                    usage.incrementJobsCompleted();
-                }
-                return null;
-            }
-        };
+        usage.incrementJobsSubmitted();
+        jobStatusByFileName.put(netId, TrainStatus.SUBMITTED);
+        PrintWriter logLocation = null;
+        try {
+            semaphore.acquire();
+            usage.incrementJobsInProgress();
+            jobStatusByFileName.put(netId, TrainStatus.IN_PROGRESS);
+            logLocation = getLogLocation(netId);
+
+            LoggingHelper.out("Starting training for file " + netId + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
+            long startTime = System.currentTimeMillis();
+            List<String> lines = Splitter.on("\n").splitToList(augtrain);
+            RectNetFixed net = new RectNetFixed().train(netId,
+                    lines,
+                    prefs.getVerbose(),
+                    false,
+                    timeoutSeconds * 1000,
+                    sfType,
+                    5,
+                    logLocation,
+                    stats);
+            LoggingHelper.out("Training complete for " + netId + " after " + TimeUtils.formatTimeSince(startTime) + " because of " + net.getTrainingSummary().getStopReason().name(), logLocation);
+            jobStatusByFileName.put(netId, TrainStatus.COMPLETE);
+            return net;
+        } catch (Exception t) {
+            LoggingHelper.error("Exception caught during evaluation of " + netId, logLocation, t);
+        } finally {
+            LoggingHelper.flushAndCloseQuietly(logLocation);
+            semaphore.release();
+            usage.incrementJobsInProgress();
+            usage.incrementJobsCompleted();
+        }
+        return null;
     }
 
     private PrintWriter getLogLocation(String name) {
