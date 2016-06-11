@@ -37,7 +37,15 @@ public class TrainingConsumer {
     }
 
     @PostConstruct
-    public void startConsumer() throws IOException {
+    public void init() {
+        if (trainingChannel == null) {
+            log.warn("Training channel not open, skipping training consumer init");
+        } else {
+            startConsumer();
+        }
+    }
+
+    public void startConsumer() {
         log.info("Starting training consumer");
         Consumer consumer = new DefaultConsumer(trainingChannel) {
             @Override
@@ -46,7 +54,11 @@ public class TrainingConsumer {
                 processMessage(message);
             }
         };
-        trainingChannel.basicConsume(RabbitMQConfig.TRAINING_CHANNEL, true, consumer);
+        try {
+            trainingChannel.basicConsume(RabbitMQConfig.TRAINING_CHANNEL, true, consumer);
+        } catch (IOException e) {
+            log.error("Training consumer failed to initialize", e);
+        }
     }
 
     private void processMessage(TrainingMessage message) {

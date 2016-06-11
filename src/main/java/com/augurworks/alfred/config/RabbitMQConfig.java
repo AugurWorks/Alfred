@@ -33,19 +33,29 @@ public class RabbitMQConfig {
     public static final String RESULTS_CHANNEL = "nets.results";
 
     @Bean
-    public Channel trainingChannel() throws IOException, TimeoutException {
+    public Channel trainingChannel() {
         log.info("Creating training RabbitMQ channel");
-        Channel channel = getConnection().createChannel();
-        channel.queueDeclare(TRAINING_CHANNEL, false, false, false, null);
-        return channel;
+        try {
+            Channel channel = getConnection().createChannel();
+            channel.queueDeclare(TRAINING_CHANNEL, false, false, false, null);
+            return channel;
+        } catch (IOException | TimeoutException e) {
+            log.error("Could not connect to RabbitMQ", e);
+            return null;
+        }
     }
 
     @Bean
-    public Channel resultChannel() throws IOException, TimeoutException {
+    public Channel resultChannel(){
         log.info("Creating results RabbitMQ channel");
-        Channel channel = getConnection().createChannel();
-        channel.queueDeclare(RESULTS_CHANNEL, false, false, false, null);
-        return channel;
+        try {
+            Channel channel = getConnection().createChannel();
+            channel.queueDeclare(RESULTS_CHANNEL, false, false, false, null);
+            return channel;
+        } catch (IOException | TimeoutException e) {
+            log.error("Could not connect to RabbitMQ", e);
+            return null;
+        }
     }
 
     private Connection getConnection() throws IOException, TimeoutException {
