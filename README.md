@@ -12,7 +12,7 @@ To run **Alfred** locally without building it follow the configuration step at t
 To build the WAR file within Docker run the following:
 
 ```bash
-bash docker-build.sh
+docker build -t alfred .
 ```
 
 ### Run
