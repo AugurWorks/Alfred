@@ -10,6 +10,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +38,7 @@ public class TrainingConsumer {
 
     @PostConstruct
     public void startConsumer() throws IOException {
+        log.info("Starting training consumer");
         Consumer consumer = new DefaultConsumer(trainingChannel) {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
@@ -48,6 +50,8 @@ public class TrainingConsumer {
     }
 
     private void processMessage(TrainingMessage message) {
+        MDC.put("netId", message.getNetId());
+        log.debug("Received an incoming training message");
         String result = alfredService.trainSynchronous(message.getNetId(), message.getData());
         sendResult(message.getNetId(), result);
     }
