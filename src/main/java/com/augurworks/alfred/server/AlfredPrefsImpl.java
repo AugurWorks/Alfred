@@ -42,7 +42,7 @@ public class AlfredPrefsImpl implements AlfredPrefs {
     private int parseInt(String pref, String defaultValue) {
         try {
             return Integer.parseInt(pref);
-        } catch (NumberFormatException e) { }
+        } catch (NumberFormatException ignored) { }
         // this should throw if it fails.
         return Integer.parseInt(defaultValue);
     }

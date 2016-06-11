@@ -7,8 +7,6 @@ import com.augurworks.alfred.stats.StatsTracker;
 import com.augurworks.alfred.stats.StatsTracker.Snapshot;
 import com.augurworks.alfred.util.BigDecimals;
 import com.augurworks.alfred.util.TimeUtils;
-import com.google.common.base.Throwables;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.log4j.MDC;
 import org.slf4j.Logger;
@@ -16,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -41,7 +38,6 @@ public class RectNetFixed extends Net {
     static Logger log = LoggerFactory.getLogger(RectNetFixed.class);
 
     private static final double NEGATIVE_INFINITY = -1000000;
-    public static final int DEFAULT_RETRIES = 5;
     // Inputs to network
     protected InputImpl[] inputs;
     // Every neuron with the same i is in the
@@ -83,7 +79,7 @@ public class RectNetFixed extends Net {
      */
     public RectNetFixed(int depth, int numInputs, PrintWriter logOutputStream) {
         if (depth < 1 || numInputs < 1) {
-            throw new IllegalArgumentException("Depth and numinputs must be >= 1");
+            throw new IllegalArgumentException("Depth and numInputs must be >= 1");
         }
         this.x = depth;
         this.y = numInputs;
@@ -104,7 +100,7 @@ public class RectNetFixed extends Net {
      */
     public RectNetFixed(int depth, int numInputs, boolean verbose) {
         if (depth < 1 || numInputs < 1) {
-            throw new IllegalArgumentException("Depth and numinputs must be >= 1");
+            throw new IllegalArgumentException("Depth and numInputs must be >= 1");
         }
         this.x = depth;
         this.y = numInputs;
@@ -308,16 +304,16 @@ public class RectNetFixed extends Net {
     }
 
     /**
-     * Sets the inputs of this network to the values given. Length of inpts must
+     * Sets the inputs of this network to the values given. Length of inputs must
      * be equal to the "height" of the network.
      *
-     * @param inpts
+     * @param inputs
      *            array of double to set as network inputs.
      */
-    public void setInputs(BigDecimal[] inpts) {
-        Validate.isTrue(inpts.length == this.y);
+    public void setInputs(BigDecimal[] inputs) {
+        Validate.isTrue(inputs.length == this.y);
         for (int j = 0; j < this.y; j++) {
-            this.inputs[j].setValue(inpts[j]);
+            this.inputs[j].setValue(inputs[j]);
         }
     }
 
@@ -341,15 +337,14 @@ public class RectNetFixed extends Net {
             ins = outs;
             outs = new BigDecimal[this.y];
         }
-        BigDecimal d = this.output.getOutput(ins);
-        return d;
+        return this.output.getOutput(ins);
     }
 
     /**
      * Trains the network on a given input with a given output the number of
-     * times specified by iterations. Trains via a backpropagation algorithm.
+     * times specified by iterations. Trains via a back-propagation algorithm.
      *
-     * @param inpts
+     * @param inputs
      *            input values for the network.
      * @param desired
      *            what the result of the network should be.
@@ -359,76 +354,66 @@ public class RectNetFixed extends Net {
      *            number of times to train the network.
      * @throws InterruptedException
      */
-    public void train(BigDecimal[] inpts, BigDecimal desired, int iterations,
+    public void train(BigDecimal[] inputs, BigDecimal desired, int iterations,
             BigDecimal learningConstant) throws InterruptedException {
         Validate.isTrue(iterations > 0);
-        Validate.isTrue(inpts.length == this.y);
+        Validate.isTrue(inputs.length == this.y);
         for (int lcv = 0; lcv < iterations && !hasTimeExpired(); lcv++) {
-            doIteration(inpts, desired, learningConstant);
+            doIteration(inputs, desired, learningConstant);
         }
     }
 
     /**
      * Denormalizes targets and estimates.
      */
-    public static String getAugout(RectNetFixed net) {
+    public String getAugout() {
         StringBuilder sb = new StringBuilder();
-        TrainingSummary summary = net.getTrainingSummary();
+        TrainingSummary summary = this.getTrainingSummary();
         sb.append("Training stop reason: ").append(summary.getStopReason().getExplanation()).append("\n");
         sb.append("Time trained: ").append(summary.getSecondsElapsed()).append("\n");
         sb.append("Rounds trained: ").append(summary.getRoundsTrained()).append("\n");
         sb.append("RMS Error: ").append(summary.getRmsError()).append("\n");
-        for (InputsAndTarget trainDatum : net.getDataSpec().getTrainData()) {
-            writeDataLine(sb, trainDatum, net);
+        for (InputsAndTarget trainDatum : this.getDataSpec().getTrainData()) {
+            writeDataLine(sb, trainDatum);
         }
-        for (InputsAndTarget predictionDatum : net.getDataSpec().getPredictionData()) {
-            writePredictionLine(sb, predictionDatum, net);
+        for (InputsAndTarget predictionDatum : this.getDataSpec().getPredictionData()) {
+            writePredictionLine(sb, predictionDatum);
         }
         return sb.toString();
     }
 
-    public static void writeAugoutFile(String filename, RectNetFixed net) {
-        String result = getAugout(net);
-        try {
-            FileUtils.writeStringToFile(new File(filename), result);
-        } catch (Throwable t) {
-            log.error("Unable to write to file {}", filename);
-            t.printStackTrace();
-        }
-    }
-
-    private static void writePredictionLine(StringBuilder sb, InputsAndTarget predictionDatum, RectNetFixed net) {
+    private void writePredictionLine(StringBuilder sb, InputsAndTarget predictionDatum) {
         sb.append(predictionDatum.getDate()).append(" ");
         sb.append("NULL").append(" ");
 
-        net.setInputs(predictionDatum.getInputs());
-        BigDecimal trainedEstimate = net.getOutput();
-        trainedEstimate = net.getDataSpec().denormalize(trainedEstimate);
+        this.setInputs(predictionDatum.getInputs());
+        BigDecimal trainedEstimate = this.getOutput();
+        trainedEstimate = this.getDataSpec().denormalize(trainedEstimate);
         sb.append(trainedEstimate.doubleValue()).append(" ");
 
         sb.append("NULL").append("\n");
     }
 
-    private static void writeDataLine(StringBuilder sb, InputsAndTarget trainDatum, RectNetFixed net) {
+    private void writeDataLine(StringBuilder sb, InputsAndTarget trainDatum) {
         sb.append(trainDatum.getDate()).append(" ");
 
         BigDecimal target = trainDatum.getTarget();
-        target = net.getDataSpec().denormalize(target);
+        target = this.getDataSpec().denormalize(target);
         sb.append(target.doubleValue()).append(" ");
 
-        net.setInputs(trainDatum.getInputs());
-        BigDecimal trainedEstimate = net.getOutput();
-        trainedEstimate = net.getDataSpec().denormalize(trainedEstimate);
+        this.setInputs(trainDatum.getInputs());
+        BigDecimal trainedEstimate = this.getOutput();
+        trainedEstimate = this.getDataSpec().denormalize(trainedEstimate);
         sb.append(trainedEstimate.doubleValue()).append(" ");
 
         sb.append(Math.abs(target.doubleValue() - trainedEstimate.doubleValue()));
         sb.append("\n");
     }
 
-    private void doIteration(BigDecimal[] inpts, BigDecimal desired, BigDecimal learningConstant) throws InterruptedException {
+    private void doIteration(BigDecimal[] inputs, BigDecimal desired, BigDecimal learningConstant) throws InterruptedException {
         checkInterrupted();
         // Set the inputs
-        setInputs(inpts);
+        setInputs(inputs);
         // Compute the last node error
         BigDecimal deltaF = getOutputError(desired);
         if (verbose) {
@@ -488,10 +473,10 @@ public class RectNetFixed extends Net {
         for (int j = 0; j < y; j++) {
             deltas[this.x][j] = deltaF;
         }
-        int leftCol = 0;
-        int leftRow = 0;
-        int rightCol = 0;
-        int rightRow = 0;
+        int leftCol;
+        int leftRow;
+        int rightCol;
+        int rightRow;
         for (leftCol = this.x - 1; leftCol >= 0; leftCol--) {
             rightCol = leftCol + 1;
             for (leftRow = 0; leftRow < this.y; leftRow++) {
@@ -549,7 +534,7 @@ public class RectNetFixed extends Net {
         return BigDecimal.valueOf(3).multiply(last).multiply(oneMinusLast).multiply(desiredMinusLast);
     }
 
-    private static class TrainingStats {
+    private class TrainingStats {
         public long startTime;
         public TrainingStopReason stopReason;
         public boolean brokeAtLocalMax;
@@ -579,7 +564,7 @@ public class RectNetFixed extends Net {
      * @return The trained neural network
      * @throws InterruptedException
      */
-    public static RectNetFixed train(String name,
+    public RectNetFixed train(String name,
                                      List<String> trainLines,
                                      boolean verbose,
                                      boolean testing,
@@ -675,7 +660,7 @@ public class RectNetFixed extends Net {
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
             LoggingHelper.out("Retraining net from file " + name + " with " +
                     TimeUtils.formatSeconds((int)timeRemaining/1000) + " remaining.", logOutputFile);
-            net = RectNetFixed.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile, stats);
+            net = this.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile, stats);
         }
         int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
         double rmsError = computeRmsError(net, inputsAndTargets);
@@ -688,7 +673,7 @@ public class RectNetFixed extends Net {
         return net;
     }
 
-    private static double computeRmsError(RectNetFixed net, List<InputsAndTarget> inputsAndTargets) {
+    private double computeRmsError(RectNetFixed net, List<InputsAndTarget> inputsAndTargets) {
         double totalRmsError = 0;
         for (int lcv = 0; lcv < inputsAndTargets.size(); lcv++) {
             InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
@@ -705,22 +690,7 @@ public class RectNetFixed extends Net {
         }
     }
 
-    public static NetTrainSpecification parseFile(File file, ScaleFunctionType sfType, boolean verbose) {
-        if (!Net.validateAUGt(file.getName())) {
-            log.error("File not valid format.");
-            throw new IllegalArgumentException("File not valid");
-        }
-        try {
-            List<String> fileLines = FileUtils.readLines(file);
-            return parseLines(fileLines, sfType, verbose);
-        } catch (IOException e) {
-            log.error("Unable to parse file {}", file);
-            e.printStackTrace();
-            throw Throwables.propagate(e);
-        }
-    }
-
-    public static NetTrainSpecification parseLines(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
+    public NetTrainSpecification parseLines(List<String> augtrain, ScaleFunctionType sfType, boolean verbose) {
         NetTrainSpecification.Builder netTrainingSpecBuilder = new Builder();
         netTrainingSpecBuilder.scaleFunctionType(sfType);
         Validate.isTrue(augtrain.size() >= 4, "Cannot parse file with no data");
@@ -733,11 +703,10 @@ public class RectNetFixed extends Net {
         while (fileLineIterator.hasNext()) {
             parseDataLine(netTrainingSpecBuilder, fileLineIterator);
         }
-        NetTrainSpecification netTrainingSpec = netTrainingSpecBuilder.build();
-        return netTrainingSpec;
+        return netTrainingSpecBuilder.build();
     }
 
-    private static void parseDataLine(
+    private void parseDataLine(
             NetTrainSpecification.Builder netTrainingSpec,
             Iterator<String> fileLineIterator) {
         String dataLine = fileLineIterator.next();
@@ -759,26 +728,26 @@ public class RectNetFixed extends Net {
         }
     }
 
-    private static void parseTrainingInfoLine(
+    private void parseTrainingInfoLine(
             NetTrainSpecification.Builder netTrainingSpec,
             Iterator<String> fileLineIterator) {
         String trainingInfoLine = fileLineIterator.next();
         String[] trainingInfoLineSplit = trainingInfoLine.split(" ");
         trainingInfoLineSplit = trainingInfoLineSplit[1].split(",");
-        int rowIter = Integer.valueOf(trainingInfoLineSplit[0]);
-        int fileIter = Integer.valueOf(trainingInfoLineSplit[1]);
+        int rowInterations = Integer.valueOf(trainingInfoLineSplit[0]);
+        int fileIterations = Integer.valueOf(trainingInfoLineSplit[1]);
         BigDecimal learningConstant = BigDecimal.valueOf(Double.valueOf(trainingInfoLineSplit[2]));
         int minTrainingRounds = Integer.valueOf(trainingInfoLineSplit[3]);
         BigDecimal cutoff = BigDecimal.valueOf(Double.valueOf(trainingInfoLineSplit[4]));
 
         netTrainingSpec.minTrainingRounds(minTrainingRounds);
         netTrainingSpec.learningConstant(learningConstant);
-        netTrainingSpec.rowIterations(rowIter);
-        netTrainingSpec.fileIterations(fileIter);
+        netTrainingSpec.rowIterations(rowInterations);
+        netTrainingSpec.fileIterations(fileIterations);
         netTrainingSpec.performanceCutoff(cutoff);
     }
 
-    private static void parseSizeLine(
+    private void parseSizeLine(
             NetTrainSpecification.Builder netTrainingSpec,
             Iterator<String> fileLineIterator) {
         String sizeLine = fileLineIterator.next();
@@ -798,7 +767,7 @@ public class RectNetFixed extends Net {
      * @param net
      *            Neural net to be saved
      */
-    public static void saveNet(String fileName, RectNetFixed net) {
+    public void saveNet(String fileName, RectNetFixed net) {
         try {
             if (!(fileName.toLowerCase().endsWith(".augsave"))) {
                 log.error("Output file name to save to should end in .augsave");
@@ -824,92 +793,16 @@ public class RectNetFixed extends Net {
             }
             out.close();
         } catch (IOException e) {
-            log.error("Error occured opening file to saveNet");
+            log.error("Error occurred opening file to saveNet");
             throw new IllegalArgumentException("Could not open file");
         }
-    }
-
-    /**
-     * Load a neural network from a .augsave file
-     *
-     * @author TheConnMan
-     * @param fileName
-     *            File path to an .augsave file containing a neural network
-     * @return Neural network from the .augsave file
-     */
-    public static RectNetFixed loadNet(String fileName) {
-        boolean valid = Net.validateAUGs(fileName);
-        if (!valid) {
-            log.error("File not valid format.");
-            throw new RuntimeException("File not valid format");
-        }
-        // Now we need to pull information out of the augsave file.
-        Charset charset = Charset.forName("US-ASCII");
-        Path file = Paths.get(fileName);
-        String line = null;
-        int lineNumber = 1;
-        String[] lineSplit;
-        String[] edges;
-        int side = 0;
-        int depth = 0;
-        int curCol = 0;
-        int curRow = 0;
-        try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            line = reader.readLine();
-            try {
-                lineSplit = line.split(" ");
-                String[] size = lineSplit[1].split(",");
-                side = Integer.valueOf(size[1]);
-                depth = Integer.valueOf(size[0]);
-            } catch (Exception e) {
-                log.error("Loading failed at line: " + lineNumber);
-            }
-        } catch (IOException x) {
-            log.error("IOException: %s%n", x);
-            throw new RuntimeException("Failed to load file");
-        }
-        RectNetFixed net = new RectNetFixed(depth, side, null);
-        try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            while ((line = reader.readLine()) != null) {
-                try {
-                    lineSplit = line.split(" ");
-                    switch (lineNumber) {
-                    case 1:
-                        break;
-                    case 2:
-                        String outputs[] = lineSplit[1].split(",");
-                        for (int edgeNum = 0; edgeNum < outputs.length; edgeNum++) {
-                            net.output.setWeight(edgeNum,
-                                    BigDecimal.valueOf(Double.parseDouble(outputs[edgeNum])));
-                        }
-                        break;
-                    default:
-                        curCol = Integer.valueOf(lineSplit[0]);
-                        curRow = (lineNumber - 3) % side;
-                        edges = lineSplit[1].split(",");
-                        for (int edgeNum = 0; edgeNum < edges.length; edgeNum++) {
-                            net.neurons[curCol][curRow].setWeight(edgeNum,
-                                    BigDecimal.valueOf(Double.parseDouble(edges[edgeNum])));
-                        }
-                        break;
-                    }
-                    lineNumber++;
-                } catch (Exception e) {
-                    log.error("Loading failed at line: " + lineNumber);
-                }
-            }
-        } catch (IOException x) {
-            log.error("IOException: %s%n", x);
-            throw new RuntimeException("Failed to load file");
-        }
-        return net;
     }
 
     /**
      * @param fileName
      * @param r
      */
-    public static BigDecimal testNet(String fileName, RectNetFixed r,
+    public BigDecimal testNet(String fileName, RectNetFixed r,
             boolean verbose) {
         boolean valid = Net.validateAUGTest(fileName, r.y);
         if (!valid) {
@@ -926,7 +819,7 @@ public class RectNetFixed extends Net {
         String[] size;
         ArrayList<BigDecimal[]> inputSets = new ArrayList<BigDecimal[]>();
         ArrayList<BigDecimal> targets = new ArrayList<BigDecimal>();
-        BigDecimal[] maxMinNums = new BigDecimal[4];
+        BigDecimal[] maxMinNumbers = new BigDecimal[4];
         try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
             while ((line = reader.readLine()) != null) {
                 try {
@@ -935,7 +828,7 @@ public class RectNetFixed extends Net {
                     case 1:
                         String[] temp = lineSplit[1].split(",");
                         for (int j = 0; j < 4; j++) {
-                            maxMinNums[j] = BigDecimal.valueOf(Double.valueOf(temp[j + 2]));
+                            maxMinNumbers[j] = BigDecimal.valueOf(Double.valueOf(temp[j + 2]));
                         }
                         break;
                     case 2:
@@ -986,12 +879,12 @@ public class RectNetFixed extends Net {
             for (int lcv = 0; lcv < inputSets.size(); lcv++) {
                 r.setInputs(inputSets.get(lcv));
 
-                BigDecimal tempTarget = (targets.get(lcv).subtract(maxMinNums[3])).multiply(
-                        (maxMinNums[0].subtract(maxMinNums[1]))).divide(
-                        (maxMinNums[2].subtract(maxMinNums[3])), BigDecimals.MATH_CONTEXT).add(maxMinNums[1]);
-                BigDecimal tempOutput = (r.getOutput().subtract(maxMinNums[3])).multiply(
-                        (maxMinNums[0].subtract(maxMinNums[1]))).divide(
-                        (maxMinNums[2].subtract(maxMinNums[3])), BigDecimals.MATH_CONTEXT).add(maxMinNums[1]);
+                BigDecimal tempTarget = (targets.get(lcv).subtract(maxMinNumbers[3])).multiply(
+                        (maxMinNumbers[0].subtract(maxMinNumbers[1]))).divide(
+                        (maxMinNumbers[2].subtract(maxMinNumbers[3])), BigDecimals.MATH_CONTEXT).add(maxMinNumbers[1]);
+                BigDecimal tempOutput = (r.getOutput().subtract(maxMinNumbers[3])).multiply(
+                        (maxMinNumbers[0].subtract(maxMinNumbers[1]))).divide(
+                        (maxMinNumbers[2].subtract(maxMinNumbers[3])), BigDecimals.MATH_CONTEXT).add(maxMinNumbers[1]);
                 log.info(tempTarget + "," + tempOutput);
                 score = score.add(tempTarget.subtract(tempOutput).abs());
                 BigDecimal diff = tempTarget.subtract(tempOutput);
@@ -1004,74 +897,6 @@ public class RectNetFixed extends Net {
             log.info("Average squared error={}", score2);
         }
         return score.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
-    }
-
-    /**
-     *
-     * @param trainingFile
-     * @param predFile
-     * @param verbose
-     * @return
-     */
-    public static BigDecimal predictTomorrow(RectNetFixed r, String trainingFile, String predFile,
-            boolean verbose, String saveFile) {
-        /*
-         * boolean valid = Net.validateAUGPred(predFile, r.y); if (!valid) {
-         * log.error("File not valid format."); System.exit(1); }
-         */
-        // Now we need to pull information out of the augtrain file.
-        Charset charset = Charset.forName("US-ASCII");
-        Path file = Paths.get(predFile);
-        String line = null;
-        int lineNumber = 1;
-        String[] lineSplit;
-        BigDecimal maxNum = BigDecimal.ONE, minNum = BigDecimal.ONE, mx = BigDecimal.ONE, mn = BigDecimal.ONE, today = BigDecimal.ZERO;
-        ArrayList<BigDecimal[]> inputSets = new ArrayList<BigDecimal[]>();
-        try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            while ((line = reader.readLine()) != null) {
-                try {
-                    lineSplit = line.split(",");
-                    switch (lineNumber) {
-                    case 1:
-                        mx = BigDecimal.valueOf(Double.valueOf(lineSplit[0]));
-                        mn = BigDecimal.valueOf(Double.valueOf(lineSplit[1]));
-                        maxNum = BigDecimal.valueOf(Double.valueOf(lineSplit[2]));
-                        minNum = BigDecimal.valueOf(Double.valueOf(lineSplit[3]));
-                        today = BigDecimal.valueOf(Double.valueOf(lineSplit[4]));
-                        break;
-                    case 3:
-                        boolean valid = Net.validateAUGPred(predFile,
-                                lineSplit.length);
-                        if (!valid) {
-                            log.error("File not valid format.");
-                            System.exit(1);
-                        }
-                        BigDecimal[] input = new BigDecimal[lineSplit.length];
-                        for (int i = 0; i < lineSplit.length; i++) {
-                            input[i] = BigDecimal.valueOf(Double.valueOf(lineSplit[i]));
-                        }
-                        inputSets.add(input);
-                        break;
-                    default:
-                        break;
-                    }
-                    lineNumber++;
-                } catch (Exception e) {
-                    log.error("Training failed at line: {}", lineNumber);
-                }
-            }
-        } catch (IOException x) {
-            log.error("IOException: %s%n", x);
-            System.exit(1);
-        }
-        r.setInputs(inputSets.get(0));
-        BigDecimal first = r.getOutput().subtract(minNum);
-        BigDecimal second = maxNum.subtract(minNum);
-        BigDecimal third = mx.subtract(mn);
-        BigDecimal scaledValue = first.divide(second, BigDecimals.MATH_CONTEXT).multiply(third).add(mn);
-        log.info("Today's price is ${}", today);
-        log.info("Tomorrow's price/change predicted to be ${}", scaledValue);
-        return scaledValue;
     }
 
     private void out(String message) {

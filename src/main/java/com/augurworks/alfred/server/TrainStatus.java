@@ -5,5 +5,5 @@ public enum TrainStatus {
     IN_PROGRESS,
     COMPLETE,
     FAILED,
-    NOT_FOUND;
+    NOT_FOUND
 }

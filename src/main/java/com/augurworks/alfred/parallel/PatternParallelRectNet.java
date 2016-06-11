@@ -64,6 +64,8 @@ public class PatternParallelRectNet extends RectNetFixed {
             log.error("File not valid format.");
             throw new RuntimeException("File not valid");
         }
+
+        RectNetFixed rectNetFixed = new RectNetFixed();
         // Now we need to pull information out of the augtrain file.
         Charset charset = Charset.forName("US-ASCII");
         Path file = Paths.get(fileName);
@@ -72,8 +74,8 @@ public class PatternParallelRectNet extends RectNetFixed {
         String[] lineSplit;
         int side = 0;
         int depth = 0;
-        int rowIter = 0;
-        int fileIter = 0;
+        int rowIterations = 0;
+        int fileIterations = 0;
         BigDecimal learningConstant = BigDecimal.ZERO;
         int minTrainingRounds = 0;
         BigDecimal cutoff = BigDecimal.ZERO;
@@ -93,8 +95,8 @@ public class PatternParallelRectNet extends RectNetFixed {
                     case 2:
                         // Information about training run
                         size = lineSplit[1].split(",");
-                        rowIter = Integer.valueOf(size[0]);
-                        fileIter = Integer.valueOf(size[1]);
+                        rowIterations = Integer.valueOf(size[0]);
+                        fileIterations = Integer.valueOf(size[1]);
                         learningConstant = BigDecimal.valueOf(Double.valueOf(size[2]));
                         minTrainingRounds = Integer.valueOf(size[3]);
                         cutoff = BigDecimal.valueOf(Double.valueOf(size[4]));
@@ -131,8 +133,8 @@ public class PatternParallelRectNet extends RectNetFixed {
             log.info("Number Inputs: {}", side);
             log.info("Net depth: {}", depth);
             log.info("Number training sets: {}", targets.size());
-            log.info("Row iterations: {}", rowIter);
-            log.info("File iterations: {}", fileIter);
+            log.info("Row iterations: {}", rowIterations);
+            log.info("File iterations: {}", fileIterations);
             log.info("Learning constant: {}", learningConstant);
             log.info("Minimum training rounds: {}", minTrainingRounds);
             log.info("Performance cutoff: {}", cutoff);
@@ -151,7 +153,7 @@ public class PatternParallelRectNet extends RectNetFixed {
         BigDecimal bestCheck = BigDecimal.valueOf(Double.POSITIVE_INFINITY);
         BigDecimal bestTestCheck = BigDecimal.valueOf(Double.POSITIVE_INFINITY);
         int i = 0;
-        boolean brokeAtPerfCutoff = false;
+        boolean brokeAtPerformanceCutoff = false;
 
         // For the partitioning (gross) FIXME
         ArrayList<Integer> list = new ArrayList<Integer>();
@@ -162,7 +164,7 @@ public class PatternParallelRectNet extends RectNetFixed {
         final ExecutorService service = Executors.newFixedThreadPool(nodes);
 
         try {
-            for (i = 0; i < fileIter; i++) {
+            for (i = 0; i < fileIterations; i++) {
                 List<Future<WeightDelta>> futures = new ArrayList<Future<WeightDelta>>(
                         nodes);
                 for (int nodeNum = 0; nodeNum < nodes; nodeNum++) {
@@ -170,15 +172,15 @@ public class PatternParallelRectNet extends RectNetFixed {
                     // TODO pick a fraction
                     int subsetSize = inputSets.size() / nodes;
                     subsetSize = 200; // FIXME
-                    BigDecimal[][] inpts = new BigDecimal[subsetSize][inputSets.get(0).length];
+                    BigDecimal[][] inputs = new BigDecimal[subsetSize][inputSets.get(0).length];
                     BigDecimal[] desired = new BigDecimal[subsetSize];
                     for (int location = 0; location < subsetSize; location++) {
                         int index = list.get(location);
-                        inpts[location] = inputSets.get(index);
+                        inputs[location] = inputSets.get(index);
                         desired[location] = targets.get(index);
                     }
-                    PatternParallelNode p = new PatternParallelNode(r, inpts,
-                            desired, rowIter, learningConstant);
+                    PatternParallelNode p = new PatternParallelNode(r, inputs,
+                            desired, rowIterations, learningConstant);
                     futures.add(service.submit(p));
                 }
                 // Sync and check the status
@@ -225,17 +227,17 @@ public class PatternParallelRectNet extends RectNetFixed {
                     BigDecimal diffCutoff2 = BigDecimal.valueOf(.05);
                     // bestCheck > -1.0 * score
                     if (bestCheck.max(BigDecimal.valueOf(-1.0).multiply(score)).equals(bestCheck)) {
-                        RectNetFixed.saveNet(saveFile, r);
+                        rectNetFixed.saveNet(saveFile, r);
                         if (testing) {
                             int idx = saveFile.replaceAll("\\\\", "/").lastIndexOf(
                                     "/");
                             int idx2 = saveFile.lastIndexOf(
                                             ".");
-                            testScore = RectNetFixed.testNet(
+                            testScore = rectNetFixed.testNet(
                                     saveFile.substring(0, idx + 1)
                                             + "OneThird.augtrain", r, verbose);
                             if (testScore.min(bestTestCheck).equals(testScore)) {
-                                RectNetFixed.saveNet(saveFile.substring(0, idx2)
+                                rectNetFixed.saveNet(saveFile.substring(0, idx2)
                                         + "Test.augsave", r);
                                 bestTestCheck = testScore;
                             }
@@ -275,7 +277,7 @@ public class PatternParallelRectNet extends RectNetFixed {
                 }
                 lastScore = BigDecimal.valueOf(-1.0).multiply(score);
                 if (score.max(BigDecimal.valueOf(-1.0).multiply(cutoff)).equals(score)) {
-                    brokeAtPerfCutoff = true;
+                    brokeAtPerformanceCutoff = true;
                     break;
                 }
                 if (score.max(maxScore).equals(score)) {
@@ -287,7 +289,7 @@ public class PatternParallelRectNet extends RectNetFixed {
         }
         if (verbose) {
             // Information about performance and training.
-            if (brokeAtPerfCutoff) {
+            if (brokeAtPerformanceCutoff) {
                 log.info("Performance cutoff hit.");
             } else {
                 log.info("Training round limit reached.");
@@ -396,7 +398,7 @@ public class PatternParallelRectNet extends RectNetFixed {
         PatternParallelRectNet r;
         try {
             r = PatternParallelRectNet.trainFile(trainingFile, 4, false, savedFile, true);
-            RectNetFixed.testNet(testFile, r, true);
+            new RectNetFixed().testNet(testFile, r, true);
         } catch (InterruptedException e) {
             log.error("Training failed", e);
         } catch (ExecutionException e) {

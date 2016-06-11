@@ -16,12 +16,12 @@ public interface Input {
      * @param code Used in implementations for caching prior outputs.
      * @return Output of this Inp
      */
-    public BigDecimal getOutput(int code);
+    BigDecimal getOutput(int code);
 
     /**
      * Returns the output of this Inp.
      *
      * @return output of this Inp
      */
-    public BigDecimal getOutput();
+    BigDecimal getOutput();
 }
