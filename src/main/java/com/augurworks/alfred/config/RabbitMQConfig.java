@@ -26,8 +26,8 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.hostname}")
     private String hostname;
 
-    @Value("${rabbitmq.port}")
-    private Integer port;
+    @Value("${rabbitmq.portnum}")
+    private Integer portnum;
 
     public static final String TRAINING_CHANNEL = "nets.training";
     public static final String RESULTS_CHANNEL = "nets.results";
@@ -63,7 +63,7 @@ public class RabbitMQConfig {
         factory.setUsername(username);
         factory.setPassword(password);
         factory.setHost(hostname);
-        factory.setPort(port);
+        factory.setPort(portnum);
         return factory.newConnection();
     }
 }
