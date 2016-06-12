@@ -9,7 +9,7 @@ public enum TrainingStopReason {
 
     private String explanation;
 
-    private TrainingStopReason(String explanation) {
+    TrainingStopReason(String explanation) {
         this.explanation = explanation;
     }
 

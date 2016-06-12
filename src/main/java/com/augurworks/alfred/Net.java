@@ -1,5 +1,4 @@
 package com.augurworks.alfred;
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,23 +30,12 @@ public abstract class Net {
 
         private final String suffix;
 
-        private NetType(String suffix) {
+        NetType(String suffix) {
             this.suffix = suffix;
         }
 
         public String getSuffix() {
             return suffix;
-        }
-
-        public static NetType fromFile(String inputFile) {
-            String extension = FilenameUtils.getExtension(inputFile);
-            for (NetType netType : values()) {
-                if (extension.equals(netType.getSuffix())) {
-                    return netType;
-                }
-            }
-            throw new IllegalArgumentException("Extension " + extension +
-                    " not recognized for input file " + inputFile + ".");
         }
     }
 
@@ -66,7 +54,7 @@ public abstract class Net {
         Charset charset = Charset.forName("US-ASCII");
         Path file = Paths.get(fileName);
         try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            String line = null;
+            String line;
             int lineNumber = 1;
             String[] lineSplit;
             int n = 0;
@@ -141,7 +129,7 @@ public abstract class Net {
         Charset charset = Charset.forName("US-ASCII");
         Path file = Paths.get(fileName);
         try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            String line = null;
+            String line;
             int lineNumber = 1;
             String[] lineSplit;
             while ((line = reader.readLine()) != null) {
@@ -158,7 +146,7 @@ public abstract class Net {
                             throw new RuntimeException();
                         if (!(Double.valueOf(size[2]) > 0))
                             throw new RuntimeException();
-                        if (!(Double.valueOf(size[3]) != null))
+                        if (Double.valueOf(size[3]) == null)
                             throw new RuntimeException();
                         if (!(Double.valueOf(size[4]) > 0))
                             throw new RuntimeException();
@@ -194,7 +182,7 @@ public abstract class Net {
                             throw new RuntimeException();
                         break;
                     default:
-                        if (!(Double.valueOf(lineSplit[0]) != null))
+                        if (Double.valueOf(lineSplit[0]) == null)
                             throw new RuntimeException();
                         size = lineSplit[1].split(",");
                         for (String s : size) {
@@ -298,7 +286,7 @@ public abstract class Net {
         return true;
     }
 
-    public static boolean validateAUGPred(String fileName, int size) {
+    public static boolean validateAUGPrediction(String fileName, int size) {
         if (!(fileName.toLowerCase().endsWith(".augpred"))) {
             log.error("Training file should end in .augpred");
             return false;
@@ -306,7 +294,7 @@ public abstract class Net {
         Charset charset = Charset.forName("US-ASCII");
         Path file = Paths.get(fileName);
         try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            String line = null;
+            String line;
             int lineNumber = 1;
             String[] lineSplit;
             while ((line = reader.readLine()) != null) {

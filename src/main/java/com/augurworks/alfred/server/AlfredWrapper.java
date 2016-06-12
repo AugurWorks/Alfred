@@ -106,7 +106,7 @@ public class AlfredWrapper {
     public void cancelJob(String fileName) {
         Future<?> future = futuresByFileName.get(fileName);
         if (future != null) {
-            log.info("Attemping to cancel job for file {}", fileName);
+            log.info("Attempting to cancel job for file {}", fileName);
             // job status will be updated in finally block of train callable
             future.cancel(true);
             futuresByFileName.remove(fileName);
@@ -117,12 +117,11 @@ public class AlfredWrapper {
     }
 
     public String printStatus() {
-        StringBuilder sb = new StringBuilder("Server Status:\n");
-        sb.append("  Jobs in progress : " + usage.getJobsInProgress()).append("\n");
-        sb.append("  Jobs submitted   : " + usage.getJobsSubmitted()).append("\n");
-        sb.append("  Jobs completed   : " + usage.getJobsCompleted()).append("\n");
-        sb.append(getCurrentJobStatusesPretty());
-        return sb.toString();
+        String sb = "Server Status:\n" + "  Jobs in progress : " + usage.getJobsInProgress() + "\n" +
+                "  Jobs submitted   : " + usage.getJobsSubmitted() + "\n" +
+                "  Jobs completed   : " + usage.getJobsCompleted() + "\n" +
+                getCurrentJobStatusesPretty();
+        return sb;
     }
 
     private Callable<RectNetFixed> getTrainCallable(final String name, final String augtrain) {
@@ -145,7 +144,7 @@ public class AlfredWrapper {
                     LoggingHelper.out("Starting training for file " + name + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
                     long startTime = System.currentTimeMillis();
                     List<String> lines = Splitter.on("\n").splitToList(augtrain);
-                    RectNetFixed net = RectNetFixed.train(name,
+                    RectNetFixed net = new RectNetFixed().train(name,
                                                           lines,
                                                           prefs.getVerbose(),
                                                           false,

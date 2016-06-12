@@ -1,11 +1,11 @@
 package com.augurworks.alfred.stats;
 
-import java.util.List;
-import java.util.Queue;
-
 import com.augurworks.alfred.TrainingStopReason;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+
+import java.util.List;
+import java.util.Queue;
 
 public class StatsTracker {
 
@@ -136,9 +136,7 @@ public class StatsTracker {
                 return false;
             if (roundsTrained != other.roundsTrained)
                 return false;
-            if (Double.doubleToLongBits(trainingConstant) != Double.doubleToLongBits(other.trainingConstant))
-                return false;
-            return true;
+            return Double.doubleToLongBits(trainingConstant) == Double.doubleToLongBits(other.trainingConstant);
         }
 
     }
