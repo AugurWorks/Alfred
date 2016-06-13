@@ -13,20 +13,8 @@ ENV TOMCAT_TGZ_URL https://www.apache.org/dist/tomcat/tomcat-$TOMCAT_MAJOR/v$TOM
 ENV CATALINA_HOME /usr/local/tomcat
 ENV PATH $CATALINA_HOME/bin:$PATH
 
-# Add app files
-COPY . /app
-
-WORKDIR /usr/local
-
 RUN apk update && \
-    apk add --no-cache openjdk8 wget bash curl tar libstdc++ && \
-
-    # Install Gradle
-    wget  https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip --no-check-certificate && \
-    unzip gradle-$GRADLE_VERSION-bin.zip && \
-    rm -f gradle-$GRADLE_VERSION-bin.zip && \
-    ln -s gradle-$GRADLE_VERSION gradle && \
-    echo -ne "- with Gradle $GRADLE_VERSION\n" >> /root/.built && \
+    apk add --no-cache openjdk8 curl tar && \
 
     # Install Tomcat
     mkdir -p "$CATALINA_HOME" && \
@@ -37,7 +25,21 @@ RUN apk update && \
     tar -xvf tomcat.tar.gz --strip-components=1 && \
     rm bin/*.bat && \
     rm tomcat.tar.gz* && \
-    rm -rf /usr/local/tomcat/webapps/* && \
+    rm -rf /usr/local/tomcat/webapps/*
+
+# Add app files
+COPY . /app
+
+WORKDIR /usr/local
+
+RUN apk add --no-cache wget bash libstdc++ && \
+
+    # Install Gradle
+    wget  https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip --no-check-certificate && \
+    unzip gradle-$GRADLE_VERSION-bin.zip && \
+    rm -f gradle-$GRADLE_VERSION-bin.zip && \
+    ln -s gradle-$GRADLE_VERSION gradle && \
+    echo -ne "- with Gradle $GRADLE_VERSION\n" >> /root/.built && \
 
     # Build WAR file
     cd /app && \
@@ -53,7 +55,7 @@ RUN apk update && \
     rm -rf /usr/local/gradle-$GRADLE_VERSION && \
     rm -rf /usr/local/share && \
     rm -rf /gradle && \
-    apk del wget bash curl tar libstdc++ && \
+    apk del wget bash libstdc++ && \
     rm -rf /var/cache/apk/* && \
     rm -rf /app
 
