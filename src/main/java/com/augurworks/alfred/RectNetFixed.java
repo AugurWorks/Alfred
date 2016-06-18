@@ -13,17 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.BufferedReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -755,148 +747,6 @@ public class RectNetFixed extends Net {
         sizeLineSplit = sizeLineSplit[1].split(",");
         netTrainingSpec.side(Integer.valueOf(sizeLineSplit[0]));
         netTrainingSpec.depth(Integer.valueOf(sizeLineSplit[1]));
-    }
-
-    /**
-     * Input a filename and a neural network to save the neural network as a
-     * .augsave file
-     *
-     * @author TheConnMan
-     * @param fileName
-     *            Filepath ending in .augsave where the network will be saved
-     * @param net
-     *            Neural net to be saved
-     */
-    public void saveNet(String fileName, RectNetFixed net) {
-        try {
-            if (!(fileName.toLowerCase().endsWith(".augsave"))) {
-                log.error("Output file name to save to should end in .augsave");
-                return;
-            }
-            PrintWriter out = new PrintWriter(new FileWriter(fileName));
-            out.println("net " + Integer.toString(net.getX()) + ","
-                    + Integer.toString(net.getY()));
-            String line = "O ";
-            for (int j = 0; j < net.getY(); j++) {
-                line += net.getOutputNeuronWeight(j) + ",";
-            }
-            out.println(line.substring(0, line.length() - 1));
-            for (int leftCol = 0; leftCol < net.getX() - 1; leftCol++) {
-                int rightCol = leftCol + 1;
-                for (int rightRow = 0; rightRow < net.getY(); rightRow++) {
-                    line = rightCol + " ";
-                    for (int leftRow = 0; leftRow < net.getY(); leftRow++) {
-                        line += net.neurons[rightCol][rightRow].getWeight(leftRow).doubleValue() + ",";
-                    }
-                    out.println(line.substring(0, line.length() - 1));
-                }
-            }
-            out.close();
-        } catch (IOException e) {
-            log.error("Error occurred opening file to saveNet");
-            throw new IllegalArgumentException("Could not open file");
-        }
-    }
-
-    /**
-     * @param fileName
-     * @param r
-     */
-    public BigDecimal testNet(String fileName, RectNetFixed r,
-            boolean verbose) {
-        boolean valid = Net.validateAUGTest(fileName, r.y);
-        if (!valid) {
-            log.error("File not valid format.");
-            throw new RuntimeException("File not valid format");
-        }
-        // Now we need to pull information out of the augtrain file.
-        Charset charset = Charset.forName("US-ASCII");
-        Path file = Paths.get(fileName);
-        String line = null;
-        int lineNumber = 1;
-        String[] lineSplit;
-        int side = r.y;
-        String[] size;
-        ArrayList<BigDecimal[]> inputSets = new ArrayList<BigDecimal[]>();
-        ArrayList<BigDecimal> targets = new ArrayList<BigDecimal>();
-        BigDecimal[] maxMinNumbers = new BigDecimal[4];
-        try (BufferedReader reader = Files.newBufferedReader(file, charset)) {
-            while ((line = reader.readLine()) != null) {
-                try {
-                    lineSplit = line.split(" ");
-                    switch (lineNumber) {
-                    case 1:
-                        String[] temp = lineSplit[1].split(",");
-                        for (int j = 0; j < 4; j++) {
-                            maxMinNumbers[j] = BigDecimal.valueOf(Double.valueOf(temp[j + 2]));
-                        }
-                        break;
-                    case 2:
-                        size = lineSplit[1].split(",");
-                        break;
-                    case 3:
-                        // Titles
-                        break;
-                    default:
-                        // expected
-                        BigDecimal target = BigDecimal.valueOf(Double.valueOf(lineSplit[0]));
-                        targets.add(target);
-                        // inputs
-                        BigDecimal[] input = new BigDecimal[side];
-                        size = lineSplit[1].split(",");
-                        for (int i = 0; i < side; i++) {
-                            input[i] = BigDecimal.valueOf(Double.valueOf(size[i]));
-                        }
-                        inputSets.add(input);
-                        break;
-                    }
-                    lineNumber++;
-                } catch (Exception e) {
-                    log.error("Training failed at line: " + lineNumber);
-                }
-            }
-        } catch (IOException x) {
-           log.error("IOException: %s%n", x);
-            System.exit(1);
-        }
-        BigDecimal score = BigDecimal.ZERO;
-        for (int lcv = 0; lcv < inputSets.size(); lcv++) {
-            r.setInputs(inputSets.get(lcv));
-            // score += Math.pow((targets.get(lcv) - r.getOutput()), 2);
-            BigDecimal diff = targets.get(lcv).multiply(r.getOutput());
-            score = score.add(diff.multiply(diff));
-        }
-        if (verbose) {
-            log.info("Final score of {}", score.doubleValue()
-                    / (1.0 * inputSets.size()));
-            // Results
-
-            log.info("-------------------------");
-            log.info("Test Results: ");
-            log.info("Actual, Prediction");
-            score = BigDecimal.ZERO;
-            BigDecimal score2 = BigDecimal.ZERO;
-            for (int lcv = 0; lcv < inputSets.size(); lcv++) {
-                r.setInputs(inputSets.get(lcv));
-
-                BigDecimal tempTarget = (targets.get(lcv).subtract(maxMinNumbers[3])).multiply(
-                        (maxMinNumbers[0].subtract(maxMinNumbers[1]))).divide(
-                        (maxMinNumbers[2].subtract(maxMinNumbers[3])), BigDecimals.MATH_CONTEXT).add(maxMinNumbers[1]);
-                BigDecimal tempOutput = (r.getOutput().subtract(maxMinNumbers[3])).multiply(
-                        (maxMinNumbers[0].subtract(maxMinNumbers[1]))).divide(
-                        (maxMinNumbers[2].subtract(maxMinNumbers[3])), BigDecimals.MATH_CONTEXT).add(maxMinNumbers[1]);
-                log.info(tempTarget + "," + tempOutput);
-                score = score.add(tempTarget.subtract(tempOutput).abs());
-                BigDecimal diff = tempTarget.subtract(tempOutput);
-                score2 = score2.add(diff.multiply(diff));
-            }
-            score = score.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
-            score2 = score2.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
-            log.info("-------------------------");
-            log.info("Average error={}", score);
-            log.info("Average squared error={}", score2);
-        }
-        return score.divide(BigDecimal.valueOf(inputSets.size()), BigDecimals.MATH_CONTEXT);
     }
 
     private void out(String message) {

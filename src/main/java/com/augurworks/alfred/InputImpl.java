@@ -1,5 +1,7 @@
 package com.augurworks.alfred;
 
+import lombok.Data;
+
 import java.math.BigDecimal;
 
 /**
@@ -8,35 +10,10 @@ import java.math.BigDecimal;
  * @author saf
  *
  */
+@Data
 public class InputImpl implements Input {
-    // The constant output of this Input.
-    private BigDecimal value;
 
-    /**
-     * Instantiates an Input with default value of 0.
-     */
-    public InputImpl() {
-        this.value = BigDecimal.ZERO;
-    }
-
-    /**
-     * Instantiates and input with the given value.
-     *
-     * @param v
-     *            initial value of this Input.
-     */
-    public InputImpl(double v) {
-        this.value = BigDecimal.valueOf(v);
-    }
-
-    /**
-     * Returns the value of this Input.
-     *
-     * @return the value of this Input.
-     */
-    public BigDecimal getValue() {
-        return this.value;
-    }
+    private BigDecimal value = BigDecimal.ZERO;
 
     /**
      * Returns the value of this Input
@@ -56,15 +33,5 @@ public class InputImpl implements Input {
      */
     public BigDecimal getOutput() {
         return this.value;
-    }
-
-    /**
-     * Sets the value of this Input.
-     *
-     * @param v
-     *            value to set this Input to.
-     */
-    public void setValue(BigDecimal v) {
-        this.value = v;
     }
 }
