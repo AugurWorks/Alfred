@@ -14,11 +14,6 @@ import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -143,7 +138,7 @@ public class AlfredWrapper {
             log.info("Starting training for file {} with time limit of {} seconds.", netId, timeoutSeconds);
             long startTime = System.currentTimeMillis();
             List<String> lines = Splitter.on("\n").splitToList(augtrain);
-            RectNetFixed net = new RectNetFixed().train(netId, lines, prefs.getVerbose(), false, timeoutSeconds * 1000, sfType, 5, stats);
+            RectNetFixed net = new RectNetFixed().train(netId, lines, prefs.getVerbose(), timeoutSeconds * 1000, sfType, 5, stats);
             log.info("Training complete for {} after {} because of {}", netId, TimeUtils.formatTimeSince(startTime), net.getTrainingSummary().getStopReason().name());
             jobStatusByFileName.put(netId, TrainStatus.COMPLETE);
             return net;

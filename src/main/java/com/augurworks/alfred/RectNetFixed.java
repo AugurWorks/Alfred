@@ -509,7 +509,6 @@ public class RectNetFixed extends Net {
     public RectNetFixed train(String name,
                                      List<String> trainLines,
                                      boolean verbose,
-                                     boolean testing,
                                      long trainingTimeLimitMillis,
                                      ScaleFunctionType sfType,
                                      int triesRemaining,
@@ -599,7 +598,7 @@ public class RectNetFixed extends Net {
             long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
             log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
-            net = this.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, stats);
+            net = this.train(name, trainLines, verbose, timeRemaining, sfType, triesRemaining--, stats);
         }
         int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
         double rmsError = computeRmsError(net, inputsAndTargets);
