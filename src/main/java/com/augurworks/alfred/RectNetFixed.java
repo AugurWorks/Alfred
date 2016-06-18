@@ -2,7 +2,6 @@ package com.augurworks.alfred;
 
 import com.augurworks.alfred.NetTrainSpecification.Builder;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import com.augurworks.alfred.server.LoggingHelper;
 import com.augurworks.alfred.stats.StatsTracker;
 import com.augurworks.alfred.stats.StatsTracker.Snapshot;
 import com.augurworks.alfred.util.BigDecimals;
@@ -12,8 +11,6 @@ import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Iterator;
@@ -42,14 +39,9 @@ public class RectNetFixed extends Net {
     // There's only one final output neuron
     // since this is built to make booleans.
     protected FixedNeuron output;
-    // Prints debug output when true.
-    protected boolean verbose = false;
     private NetDataSpecification netData = null;
     private TimingInfo timingInfo = null;
     private TrainingSummary trainingSummary = null;
-
-    @Nullable
-    private final PrintWriter logOutputStream;
 
     /**
      * Constructs a new RectNet with 10 inputs and 5 layers of network.
@@ -58,7 +50,6 @@ public class RectNetFixed extends Net {
         this.x = 5;
         this.y = 10;
         init();
-        this.logOutputStream = null;
     }
 
     /**
@@ -69,36 +60,13 @@ public class RectNetFixed extends Net {
      * @param numInputs
      *            number of inputs to the network
      */
-    public RectNetFixed(int depth, int numInputs, PrintWriter logOutputStream) {
+    public RectNetFixed(int depth, int numInputs) {
         if (depth < 1 || numInputs < 1) {
             throw new IllegalArgumentException("Depth and numInputs must be >= 1");
         }
         this.x = depth;
         this.y = numInputs;
         init();
-        this.logOutputStream = logOutputStream;
-    }
-
-    /**
-     * Constructs a new RectNet with given depth and number of inputs. Sets the
-     * verbose boolean as given.
-     *
-     * @param depth
-     *            number of layers in the network
-     * @param numInputs
-     *            number of inputs to the network
-     * @param verbose
-     *            true when RectNet displays debug output.
-     */
-    public RectNetFixed(int depth, int numInputs, boolean verbose) {
-        if (depth < 1 || numInputs < 1) {
-            throw new IllegalArgumentException("Depth and numInputs must be >= 1");
-        }
-        this.x = depth;
-        this.y = numInputs;
-        this.verbose = verbose;
-        init();
-        this.logOutputStream = null;
     }
 
     /**
@@ -408,9 +376,6 @@ public class RectNetFixed extends Net {
         setInputs(inputs);
         // Compute the last node error
         BigDecimal deltaF = getOutputError(desired);
-        if (verbose) {
-            out("DeltaF (smaller is better): " + deltaF);
-        }
         // For each interior node, compute the weighted error
         // deltas are of the form
         // delta[col][row]
@@ -439,10 +404,6 @@ public class RectNetFixed extends Net {
                                     .getLastOutput()).multiply(deltas[rightCol][rightRow]);
                     this.neurons[rightCol][rightRow].changeWeight(leftRow,
                             dw);
-                    if (verbose) {
-                        out(leftCol + "," + leftRow + "->" + rightCol + "," + rightRow);
-                        out("" + this.neurons[rightCol][rightRow].getWeight(leftRow));
-                    }
                 }
             }
         }
@@ -492,17 +453,6 @@ public class RectNetFixed extends Net {
                     }
                 }
                 deltas[leftCol][leftRow] = delta.multiply(summedRightWeightDelta);
-                if (verbose) {
-                    out("leftCol: " + leftCol
-                            + ", leftRow: " + leftRow + ", lo*(1-lo): "
-                            + delta);
-                    out("leftCol: " + leftCol
-                            + ", leftRow: " + leftRow + ", srwd: "
-                            + summedRightWeightDelta);
-                    out("leftCol: " + leftCol
-                            + ", leftRow: " + leftRow + ", delta: "
-                            + deltas[leftCol][leftRow]);
-                }
             }
         }
         return deltas;
@@ -559,16 +509,13 @@ public class RectNetFixed extends Net {
     public RectNetFixed train(String name,
                                      List<String> trainLines,
                                      boolean verbose,
-                                     boolean testing,
                                      long trainingTimeLimitMillis,
                                      ScaleFunctionType sfType,
                                      int triesRemaining,
-                                     PrintWriter logOutputFile,
                                      StatsTracker stats) throws InterruptedException {
 
         if (trainingTimeLimitMillis <= 0) {
-            LoggingHelper.out("Training timeout was " + trainingTimeLimitMillis +
-                    ", which is <= 0, so jobs will not time out.", logOutputFile);
+            log.info("Training timeout was {}, which is <= 0, so jobs will not time out.", trainingTimeLimitMillis);
         }
         if (triesRemaining == 0) {
             throw new IllegalStateException("Unable to train file " + name + "!");
@@ -577,7 +524,7 @@ public class RectNetFixed extends Net {
         MDC.put("performanceCutoff", netSpec.getPerformanceCutoff());
         MDC.put("learningConstant", netSpec.getLearningConstant());
         MDC.put("minTrainingRounds", netSpec.getMinTrainingRounds());
-        RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide(), logOutputFile);
+        RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide());
         net.setData(netSpec.getNetData());
         net.setTimingInfo(TimingInfo.withDuration(trainingTimeLimitMillis));
         // Actually do the training part
@@ -639,7 +586,7 @@ public class RectNetFixed extends Net {
             if (fileIteration % 100 == 0) {
                 MDC.put("netScore", score.round(new MathContext(4)).toString());
                 double rmsError = computeRmsError(net, inputsAndTargets);
-                LoggingHelper.out("Net " + name + " has trained for " + fileIteration + " rounds, RMS Error: " + rmsError, logOutputFile);
+                log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
                 stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
                         netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
                         trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
@@ -650,9 +597,8 @@ public class RectNetFixed extends Net {
         if (trainingStats.brokeAtLocalMax) {
             long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
             long timeRemaining = trainingTimeLimitMillis - timeExpired;
-            LoggingHelper.out("Retraining net from file " + name + " with " +
-                    TimeUtils.formatSeconds((int)timeRemaining/1000) + " remaining.", logOutputFile);
-            net = this.train(name, trainLines, verbose, testing, timeRemaining, sfType, triesRemaining--, logOutputFile, stats);
+            log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
+            net = this.train(name, trainLines, verbose, timeRemaining, sfType, triesRemaining--, stats);
         }
         int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
         double rmsError = computeRmsError(net, inputsAndTargets);
@@ -748,9 +694,4 @@ public class RectNetFixed extends Net {
         netTrainingSpec.side(Integer.valueOf(sizeLineSplit[0]));
         netTrainingSpec.depth(Integer.valueOf(sizeLineSplit[1]));
     }
-
-    private void out(String message) {
-        LoggingHelper.out(message, logOutputStream);
-    }
-
 }
