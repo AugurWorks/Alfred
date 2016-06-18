@@ -587,7 +587,7 @@ public class RectNetFixed extends Net {
             if (fileIteration % 100 == 0) {
                 MDC.put("netScore", score.round(new MathContext(4)).toString());
                 double rmsError = computeRmsError(net, inputsAndTargets);
-                log.info("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
+                log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
                 stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
                         netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
                         trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
