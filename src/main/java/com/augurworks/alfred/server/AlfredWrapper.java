@@ -135,47 +135,26 @@ public class AlfredWrapper {
 
         usage.incrementJobsSubmitted();
         jobStatusByFileName.put(netId, TrainStatus.SUBMITTED);
-        PrintWriter logLocation = null;
         try {
             semaphore.acquire();
             usage.incrementJobsInProgress();
             jobStatusByFileName.put(netId, TrainStatus.IN_PROGRESS);
-            logLocation = getLogLocation(netId);
 
-            LoggingHelper.out("Starting training for file " + netId + " with time limit of " + timeoutSeconds + " seconds.", logLocation);
+            log.info("Starting training for file {} with time limit of {} seconds.", netId, timeoutSeconds);
             long startTime = System.currentTimeMillis();
             List<String> lines = Splitter.on("\n").splitToList(augtrain);
-            RectNetFixed net = new RectNetFixed().train(netId,
-                    lines,
-                    prefs.getVerbose(),
-                    false,
-                    timeoutSeconds * 1000,
-                    sfType,
-                    5,
-                    logLocation,
-                    stats);
-            LoggingHelper.out("Training complete for " + netId + " after " + TimeUtils.formatTimeSince(startTime) + " because of " + net.getTrainingSummary().getStopReason().name(), logLocation);
+            RectNetFixed net = new RectNetFixed().train(netId, lines, prefs.getVerbose(), false, timeoutSeconds * 1000, sfType, 5, stats);
+            log.info("Training complete for {} after {} because of {}", netId, TimeUtils.formatTimeSince(startTime), net.getTrainingSummary().getStopReason().name());
             jobStatusByFileName.put(netId, TrainStatus.COMPLETE);
             return net;
         } catch (Exception t) {
-            LoggingHelper.error("Exception caught during evaluation of " + netId, logLocation, t);
+            log.error("Exception caught during evaluation of " + netId, t);
         } finally {
-            LoggingHelper.flushAndCloseQuietly(logLocation);
             semaphore.release();
             usage.incrementJobsInProgress();
             usage.incrementJobsCompleted();
         }
         return null;
-    }
-
-    private PrintWriter getLogLocation(String name) {
-        try {
-            new File("logs").mkdir();
-            return new PrintWriter(new BufferedWriter(new FileWriter(new File("logs/" + name + ".log"))));
-        } catch (IOException e) {
-            log.error("Unable to create log file for {}", name);
-            return null;
-        }
     }
 
     public List<Snapshot> getStats() {
