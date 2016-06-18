@@ -73,6 +73,11 @@ public class AlfredServiceImpl implements AlfredService {
     }
 
     @Override
+    public String trainSynchronous(String netId, String augtrain) {
+        return alfred.trainSynchronous(netId, augtrain).getAugout();
+    }
+
+    @Override
     public String getResult(String name) {
         Optional<RectNetFixed> result = null;
         try {

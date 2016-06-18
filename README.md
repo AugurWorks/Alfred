@@ -37,6 +37,11 @@ The Docker container can be run with certain environment variables to customize 
 - **VERBOSE** (default: false) - Verbose logging flag
 - **SCALE_FUNCTION** (default: SIGMOID) - Scaling function (SIGMOID or LINEAR)
 
+- **RABBITMQ_USERNAME** (default: guest) - RabbitMQ username
+- **RABBITMQ_PASSWORD** (default: guest) - RabbitMQ password
+- **RABBITMQ_HOST** (default: rabbitmq) - RabbitMQ hostname
+- **RABBITMQ_PORT** (default: 5672) - RabbitMQ port
+
 ## Tag and Push
 **NOTE:** Info on configuring the AWS command line for ECR and the repo referred to here can be found [here](https://console.aws.amazon.com/ecs/home?region=us-east-1#/repositories/alfred#images)
 
