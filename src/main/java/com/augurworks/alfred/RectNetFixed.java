@@ -39,8 +39,6 @@ public class RectNetFixed extends Net {
     // There's only one final output neuron
     // since this is built to make booleans.
     protected FixedNeuron output;
-    // Prints debug output when true.
-    protected boolean verbose = false;
     private NetDataSpecification netData = null;
     private TimingInfo timingInfo = null;
     private TrainingSummary trainingSummary = null;
@@ -68,27 +66,6 @@ public class RectNetFixed extends Net {
         }
         this.x = depth;
         this.y = numInputs;
-        init();
-    }
-
-    /**
-     * Constructs a new RectNet with given depth and number of inputs. Sets the
-     * verbose boolean as given.
-     *
-     * @param depth
-     *            number of layers in the network
-     * @param numInputs
-     *            number of inputs to the network
-     * @param verbose
-     *            true when RectNet displays debug output.
-     */
-    public RectNetFixed(int depth, int numInputs, boolean verbose) {
-        if (depth < 1 || numInputs < 1) {
-            throw new IllegalArgumentException("Depth and numInputs must be >= 1");
-        }
-        this.x = depth;
-        this.y = numInputs;
-        this.verbose = verbose;
         init();
     }
 
@@ -399,9 +376,6 @@ public class RectNetFixed extends Net {
         setInputs(inputs);
         // Compute the last node error
         BigDecimal deltaF = getOutputError(desired);
-        if (verbose) {
-            log.info("DeltaF (smaller is better): " + deltaF);
-        }
         // For each interior node, compute the weighted error
         // deltas are of the form
         // delta[col][row]
@@ -430,10 +404,6 @@ public class RectNetFixed extends Net {
                                     .getLastOutput()).multiply(deltas[rightCol][rightRow]);
                     this.neurons[rightCol][rightRow].changeWeight(leftRow,
                             dw);
-                    if (verbose) {
-                        log.info(leftCol + "," + leftRow + "->" + rightCol + "," + rightRow);
-                        log.info("" + this.neurons[rightCol][rightRow].getWeight(leftRow));
-                    }
                 }
             }
         }
@@ -483,17 +453,6 @@ public class RectNetFixed extends Net {
                     }
                 }
                 deltas[leftCol][leftRow] = delta.multiply(summedRightWeightDelta);
-                if (verbose) {
-                    log.info("leftCol: " + leftCol
-                            + ", leftRow: " + leftRow + ", lo*(1-lo): "
-                            + delta);
-                    log.info("leftCol: " + leftCol
-                            + ", leftRow: " + leftRow + ", srwd: "
-                            + summedRightWeightDelta);
-                    log.info("leftCol: " + leftCol
-                            + ", leftRow: " + leftRow + ", delta: "
-                            + deltas[leftCol][leftRow]);
-                }
             }
         }
         return deltas;
