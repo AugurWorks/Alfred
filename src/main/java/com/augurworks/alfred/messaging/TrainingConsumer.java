@@ -52,10 +52,11 @@ public class TrainingConsumer {
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
                 TrainingMessage message = mapper.readValue(body, TrainingMessage.class);
                 processMessage(message);
+                trainingChannel.basicAck(envelope.getDeliveryTag(), false);
             }
         };
         try {
-            trainingChannel.basicConsume(RabbitMQConfig.TRAINING_CHANNEL, true, consumer);
+            trainingChannel.basicConsume(RabbitMQConfig.TRAINING_CHANNEL, false, consumer);
         } catch (IOException e) {
             log.error("Training consumer failed to initialize", e);
         }
