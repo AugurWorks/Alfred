@@ -83,7 +83,7 @@ public class AlfredServiceImpl implements AlfredService {
         try {
             result = alfred.getResultIfComplete(name);
         } catch (InterruptedException | ExecutionException e) {
-            log.error("Error getting result for net " + name, e);
+            log.error("Error getting result for net {}", name, e);
         }
         if (result == null || !result.isPresent()) {
             return "";

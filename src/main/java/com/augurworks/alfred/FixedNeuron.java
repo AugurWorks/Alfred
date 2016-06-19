@@ -1,6 +1,8 @@
 package com.augurworks.alfred;
 
 import com.augurworks.alfred.util.BigDecimals;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +15,11 @@ public class FixedNeuron implements Input {
 
     private BigDecimal[] weights;
     private Input[] inputs;
-    private String name;
+    @Getter
+    @Setter
+    private String name = "";
     private int numInputsFilled;
-    private int numInputs;
+    private final int numInputs;
     private BigDecimal lastOutput;
     private int lastCode;
 
@@ -28,28 +32,7 @@ public class FixedNeuron implements Input {
     public FixedNeuron(int numInputs) {
         this.weights = new BigDecimal[numInputs];
         this.inputs = new Input[numInputs];
-        this.name = "";
-        this.numInputsFilled = 0;
         this.numInputs = numInputs;
-    }
-
-    /**
-     * Sets the name of this neuron.
-     *
-     * @param n
-     *            name to give this neuron.
-     */
-    public void setName(String n) {
-        this.name = n;
-    }
-
-    /**
-     * returns the name of this neuron.
-     *
-     * @return the name of this neuron.
-     */
-    public String getName() {
-        return this.name;
     }
 
     /**

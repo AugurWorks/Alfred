@@ -1,12 +1,12 @@
 package com.augurworks.alfred;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 import com.augurworks.alfred.scaling.ScaleFunction;
 import com.augurworks.alfred.scaling.ScaleFunctions;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 import com.google.common.collect.Lists;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 public class NetDataSpecification {
 
@@ -39,7 +39,7 @@ public class NetDataSpecification {
         }
 
         public Builder addPredictionRow(String date, BigDecimal[] inputs) {
-            predictionRows.add(InputsAndTarget.withoutTarget(date, inputs));
+            predictionRows.add(new InputsAndTarget(date, null, inputs));
             return this;
         }
 
@@ -83,7 +83,7 @@ public class NetDataSpecification {
         private List<InputsAndTarget> buildInputs() {
             List<InputsAndTarget> inputsAndTargets = Lists.newArrayList();
             for (int i = 0; i < targets.size(); i++) {
-                inputsAndTargets.add(InputsAndTarget.withTarget(dates.get(i), inputSets.get(i), targets.get(i)));
+                inputsAndTargets.add(new InputsAndTarget(dates.get(i), targets.get(i), inputSets.get(i)));
             }
             return inputsAndTargets;
         }

@@ -14,9 +14,6 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 import springfox.documentation.annotations.ApiIgnore;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.UUID;
 
 @Controller
@@ -60,13 +57,6 @@ public class AlfredEndpoint {
     @RequestMapping(value = "/stats", method = RequestMethod.GET, produces = "application/json")
     public @ResponseBody String getStats() {
         return service.getStats();
-    }
-
-    @RequestMapping(value = "/logs/{id}", method = RequestMethod.GET, produces = "application/json")
-    public @ResponseBody String getLogs(@PathVariable String id) throws IOException {
-        MDC.put("netId", id);
-        log.debug("Getting logs for {}", id);
-        return new String(Files.readAllBytes(Paths.get("logs/" + id + ".log")));
     }
 
     @ApiIgnore
