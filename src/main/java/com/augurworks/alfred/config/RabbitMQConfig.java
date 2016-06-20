@@ -29,15 +29,18 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.portnum}")
     private Integer portnum;
 
-    public static final String TRAINING_CHANNEL = "nets.training";
-    public static final String RESULTS_CHANNEL = "nets.results";
+    @Value("${rabbitmq.env}")
+    private String env;
+
+    private static final String TRAINING_CHANNEL = "nets.training";
+    private static final String RESULTS_CHANNEL = "nets.results";
 
     @Bean
     public Channel trainingChannel() {
-        log.info("Creating training RabbitMQ channel");
+        log.info("Creating training RabbitMQ channel {}", getTrainingChannelName(env));
         try {
             Channel channel = getConnection().createChannel();
-            channel.queueDeclare(TRAINING_CHANNEL, false, false, false, null);
+            channel.queueDeclare(getTrainingChannelName(env), false, false, false, null);
             return channel;
         } catch (IOException | TimeoutException e) {
             log.error("Could not connect to RabbitMQ", e);
@@ -47,10 +50,10 @@ public class RabbitMQConfig {
 
     @Bean
     public Channel resultChannel(){
-        log.info("Creating results RabbitMQ channel");
+        log.info("Creating results RabbitMQ channel {}", getResultsChannelName(env));
         try {
             Channel channel = getConnection().createChannel();
-            channel.queueDeclare(RESULTS_CHANNEL, false, false, false, null);
+            channel.queueDeclare(getResultsChannelName(env), false, false, false, null);
             return channel;
         } catch (IOException | TimeoutException e) {
             log.error("Could not connect to RabbitMQ", e);
@@ -65,5 +68,17 @@ public class RabbitMQConfig {
         factory.setHost(hostname);
         factory.setPort(portnum);
         return factory.newConnection();
+    }
+
+    public static String getTrainingChannelName(String env) {
+        return TRAINING_CHANNEL + getPostfix(env);
+    }
+
+    public static String getResultsChannelName(String env) {
+        return RESULTS_CHANNEL + getPostfix(env);
+    }
+
+    private static String getPostfix(String env) {
+        return env == null ? "" : "." + env;
     }
 }

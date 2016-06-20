@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -27,13 +28,16 @@ public class TrainingConsumer {
     private Channel trainingChannel;
     private Channel resultChannel;
 
+    private String rabbitMQEnv;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
-    public TrainingConsumer(AlfredService alfredService, Channel trainingChannel, Channel resultChannel) {
+    public TrainingConsumer(AlfredService alfredService, Channel trainingChannel, Channel resultChannel, @Value("${rabbitmq.env}") String rabbitMQEnv) {
         this.alfredService = alfredService;
         this.trainingChannel = trainingChannel;
         this.resultChannel = resultChannel;
+        this.rabbitMQEnv = rabbitMQEnv;
     }
 
     @PostConstruct
@@ -56,7 +60,7 @@ public class TrainingConsumer {
             }
         };
         try {
-            trainingChannel.basicConsume(RabbitMQConfig.TRAINING_CHANNEL, false, consumer);
+            trainingChannel.basicConsume(RabbitMQConfig.getTrainingChannelName(rabbitMQEnv), false, consumer);
         } catch (IOException e) {
             log.error("Training consumer failed to initialize", e);
         }
@@ -73,7 +77,7 @@ public class TrainingConsumer {
         log.debug("Sending message for net {}", netId);
         TrainingMessage message = new TrainingMessage(netId, result);
         try {
-            resultChannel.basicPublish("", RabbitMQConfig.RESULTS_CHANNEL, null, mapper.writeValueAsString(message).getBytes());
+            resultChannel.basicPublish("", RabbitMQConfig.getResultsChannelName(rabbitMQEnv), null, mapper.writeValueAsString(message).getBytes());
         } catch (IOException e) {
             log.error("An error occurred when publishing a message for net {}", netId, e);
         }
