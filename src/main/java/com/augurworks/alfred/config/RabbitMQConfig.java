@@ -3,6 +3,7 @@ package com.augurworks.alfred.config;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,6 +80,6 @@ public class RabbitMQConfig {
     }
 
     private static String getPostfix(String env) {
-        return env == null ? "" : "." + env;
+        return StringUtils.isEmpty(env) ? "" : "." + env;
     }
 }
