@@ -11,6 +11,7 @@ appender("FLUENTD", DataFluentAppender) {
     maxQueueSize = 999
     additionalFields = [
         function: "ALF",
+        env: System.getProperty('ENV') ?: (System.getenv('ENV') ?: 'DEV'),
         hostname: System.getenv('HOSTNAME') ?: InetAddress.getLocalHost().getHostName()
     ]
 }
