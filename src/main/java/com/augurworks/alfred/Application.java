@@ -1,6 +1,8 @@
 package com.augurworks.alfred;
 
 import com.google.common.base.Predicates;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -13,9 +15,13 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import javax.annotation.PreDestroy;
+
 @SpringBootApplication
 @EnableSwagger2
 public class Application extends SpringBootServletInitializer {
+
+    Logger log = LoggerFactory.getLogger(Application.class);
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
@@ -35,5 +41,10 @@ public class Application extends SpringBootServletInitializer {
                 .build()
                 .pathMapping("/")
                 .genericModelSubstitutes(ResponseEntity.class);
+    }
+
+    @PreDestroy
+    void shutdown() {
+        log.warn("Shutting down Alfred  ");
     }
 }
