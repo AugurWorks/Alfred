@@ -80,6 +80,6 @@ public class RabbitMQConfig {
     }
 
     private static String getPostfix(String env) {
-        return StringUtils.isEmpty(env) ? "" : "." + env;
+        return StringUtils.isEmpty(env) ? "" : "." + env.toLowerCase();
     }
 }
