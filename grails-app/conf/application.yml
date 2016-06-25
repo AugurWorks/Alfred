@@ -107,9 +107,6 @@ grails:
         encoding: UTF-8
 
 ---
-server:
-    port: 8081
-
 rabbitmq:
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
