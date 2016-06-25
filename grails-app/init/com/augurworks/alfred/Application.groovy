@@ -1,4 +1,4 @@
-package alfred
+package com.augurworks.alfred
 
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration

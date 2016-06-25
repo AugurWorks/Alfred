@@ -1,4 +1,4 @@
-package alfred
+package com.augurworks.alfred
 
 class UrlMappings {
 
