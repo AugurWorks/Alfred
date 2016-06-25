@@ -1,7 +1,7 @@
 package com.augurworks.alfred.messaging;
 
 import com.augurworks.alfred.config.RabbitMQConfig;
-import com.augurworks.alfred.server.AlfredService;
+import com.augurworks.alfred.services.AlfredService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;

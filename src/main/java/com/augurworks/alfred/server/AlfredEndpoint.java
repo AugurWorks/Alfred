@@ -1,5 +1,6 @@
 package com.augurworks.alfred.server;
 
+import com.augurworks.alfred.services.AlfredService;
 import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
