@@ -41,7 +41,17 @@ class MessagingService {
             factory.setPassword((String) grailsApplication.config.rabbitmq.password)
             factory.setHost((String) grailsApplication.config.rabbitmq.hostname)
             factory.setPort(Integer.valueOf(grailsApplication.config.rabbitmq.portnum))
+            factory.setRequestedHeartbeat(1)
+            factory.setConnectionTimeout(5000)
+            factory.setAutomaticRecoveryEnabled(true)
+            factory.setTopologyRecoveryEnabled(true)
             Connection connection = factory.newConnection()
+
+            connection.addShutdownListener(new ShutdownListener() {
+                public void shutdownCompleted(ShutdownSignalException e) {
+                    log.error('RabbitMQ connection lost', e)
+                }
+            });
 
             String channelPostfix = grailsApplication.config.rabbitmq.env ? '.' + grailsApplication.config.rabbitmq.env.toLowerCase() : ''
 
