@@ -1,22 +1,25 @@
-package com.augurworks.alfred.server;
+package com.augurworks.alfred.services
 
-import com.augurworks.alfred.RectNetFixed;
-import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import com.augurworks.alfred.stats.StatsTracker.Snapshot;
-import com.google.common.base.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import com.augurworks.alfred.RectNetFixed
+import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType
+import com.augurworks.alfred.server.AlfredPrefs
+import com.augurworks.alfred.server.AlfredPrefsImpl
+import com.augurworks.alfred.server.AlfredWrapper
+import com.augurworks.alfred.server.TrainStatus
+import com.augurworks.alfred.stats.StatsTracker.Snapshot
+import com.google.common.base.Optional
+import grails.transaction.Transactional
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-import javax.annotation.PostConstruct;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 
-@Service
-public class AlfredServiceImpl implements AlfredService {
+@Transactional
+class AlfredService {
 
-    private static final Logger log = LoggerFactory.getLogger(AlfredServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(AlfredService.class);
     private AlfredPrefs prefs;
     private AlfredWrapper alfred;
 
@@ -38,7 +41,6 @@ public class AlfredServiceImpl implements AlfredService {
         alfred.shutdownNow();
     }
 
-    @Override
     public TrainStatus getStatus(String name) {
         TrainStatus trainStatus = alfred.getCurrentJobStatuses().get(name);
         if (trainStatus == null) {
@@ -47,37 +49,30 @@ public class AlfredServiceImpl implements AlfredService {
         return trainStatus;
     }
 
-    @Override
     public void cancelJob(String jobName) {
         alfred.cancelJob(jobName);
     }
 
-    @Override
     public boolean isShutdown() {
         return alfred.isShutdown();
     }
 
-    @Override
     public void shutdownAndAwaitTermination(long timeout, TimeUnit unit) {
         alfred.shutdownAndAwaitTermination(timeout, unit);
     }
 
-    @Override
     public void shutdownImmediate() {
         alfred.shutdownNow();
     }
 
-    @Override
     public void train(String name, String augtrain) {
         alfred.train(name, augtrain);
     }
 
-    @Override
     public String trainSynchronous(String netId, String augtrain) {
         return alfred.trainSynchronous(netId, augtrain).getAugout();
     }
 
-    @Override
     public String getResult(String name) {
         Optional<RectNetFixed> result = null;
         try {
@@ -92,7 +87,6 @@ public class AlfredServiceImpl implements AlfredService {
         }
     }
 
-    @Override
     public String getStats() {
         List<Snapshot> snapshots = alfred.getStats();
         StringBuilder sb = new StringBuilder();
