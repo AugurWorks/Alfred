@@ -1,6 +1,6 @@
 #!/bin/sh
 
-version=`cat build.gradle | grep "^version " | sed -r "s/.*version = '(.*)'$/\1/"`
+version=`cat build.gradle | grep "^version " | sed -r 's/version "(.*)".*$/\1/'`
 
 echo "Building container v$version$1"
 docker build -t alfred .
