@@ -60,6 +60,7 @@ class MessagingService {
 
             log.info('Connecting to RabbitMQ channel ' + trainingChannelName)
             trainingChannel = connection.createChannel()
+            trainingChannel.basicQos(1);
             trainingChannel.queueDeclare(trainingChannelName, true, false, false, null)
 
             log.info('Connecting to RabbitMQ channel ' + resultsChannelName)
