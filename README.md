@@ -30,6 +30,7 @@ By default Docker containers will not persist nets between Docker runs. There is
 
 #### Environment Variables
 The Docker container can be run with certain environment variables to customize the container. These can be passed with the `-e VARIABLE=value` flag on the `docker run` command. Below are the variables and the defaults:
+- **ENV** (default: DEV) - Environment field for logging and RabbitMQ channel postfix
 - **FLUENTD_HOST** - Remote Fluentd host for centralized logging
 - **HOSTNAME** (default: container id) - Hostname shown in Fluentd logging
 - **NUM_THREADS** (default: 16) - Number of Alfred processing threads
