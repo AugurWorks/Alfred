@@ -22,7 +22,7 @@ import java.util.List;
  * @author saf
  *
  */
-public class RectNetFixed extends Net {
+public class RectNetFixed {
 
     static Logger log = LoggerFactory.getLogger(RectNetFixed.class);
 
@@ -280,7 +280,6 @@ public class RectNetFixed extends Net {
     /**
      * Returns the output value from this network run.
      */
-    @Override
     public BigDecimal getOutput() {
         BigDecimal[] outs = new BigDecimal[this.y];
         BigDecimal[] ins = new BigDecimal[this.y];
