@@ -581,12 +581,7 @@ public class RectNetFixed extends Net {
                 }
 
                 if (fileIteration % 100 == 0) {
-                    MDC.put("netScore", score.round(new MathContext(4)).toString());
-                    double rmsError = computeRmsError(net, inputsAndTargets);
-                    log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
-                    stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
-                            netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
-                            trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
+                    logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets);
                 }
 
             }
@@ -596,19 +591,22 @@ public class RectNetFixed extends Net {
                 long timeRemaining = trainingTimeLimitMillis - timeExpired;
                 log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
             } else {
-                int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
-                double rmsError = computeRmsError(net, inputsAndTargets);
-                net.trainingSummary = new TrainingSummary(trainingStats.stopReason, timeExpired, fileIteration, rmsError);
-
-                stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
-                        netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
-                        trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
-
+                logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets);
                 return net;
             }
         }
         // tried N times, now we have to give up :(.
         throw new IllegalStateException("Unable to train file " + name + "!");
+    }
+
+    private void logStatSnapshot(String name, StatsTracker stats, NetTrainSpecification netSpec, RectNetFixed net,
+            TrainingStats trainingStats, int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets) {
+        MDC.put("netScore", score.round(new MathContext(4)).toString());
+        double rmsError = computeRmsError(net, inputsAndTargets);
+        log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
+        stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
+                netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
+                trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
     }
 
     private double computeRmsError(RectNetFixed net, List<InputsAndTarget> inputsAndTargets) {
