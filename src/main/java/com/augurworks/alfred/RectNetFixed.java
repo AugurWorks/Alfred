@@ -24,9 +24,10 @@ import java.util.List;
  */
 public class RectNetFixed {
 
-    static Logger log = LoggerFactory.getLogger(RectNetFixed.class);
-
+    private static Logger log = LoggerFactory.getLogger(RectNetFixed.class);
     private static final double NEGATIVE_INFINITY = -1000000;
+    public static final double SIGMOID_ALPHA = 3;
+
     // Inputs to network
     protected InputImpl[] inputs;
     // Every neuron with the same i is in the
@@ -47,9 +48,7 @@ public class RectNetFixed {
      * Constructs a new RectNet with 10 inputs and 5 layers of network.
      */
     public RectNetFixed() {
-        this.x = 5;
-        this.y = 10;
-        init();
+        this(5, 10);
     }
 
     /**
@@ -200,8 +199,10 @@ public class RectNetFixed {
     }
 
     /**
-     * Initializes the RectNet by: 1) creating neurons and inputs as necessary
-     * 2) connecting neurons to the inputs 3) connecting neurons to each other
+     * Initializes the RectNet by:
+     * 1) creating neurons and inputs as necessary
+     * 2) connecting neurons to the inputs
+     * 3) connecting neurons to each other
      * 4) connecting neurons to the output
      *
      * Initial weights are specified by initNum(), allowing random initial
@@ -435,7 +436,7 @@ public class RectNetFixed {
                 BigDecimal lastOutput = this.neurons[leftCol][leftRow].getLastOutput();
                 // since we're using alpha = 3 in the neurons
                 // 3 * lastOutput * (1 - lastOutput);
-                BigDecimal delta = BigDecimal.valueOf(3).multiply(lastOutput).multiply(BigDecimal.ONE.subtract(lastOutput));
+                BigDecimal delta = BigDecimal.valueOf(SIGMOID_ALPHA).multiply(lastOutput).multiply(BigDecimal.ONE.subtract(lastOutput));
                 BigDecimal summedRightWeightDelta = BigDecimal.ZERO;
                 for (rightRow = 0; rightRow < this.y; rightRow++) {
                     if (rightCol == this.x) {
@@ -472,7 +473,7 @@ public class RectNetFixed {
         BigDecimal last = this.output.getLastOutput();
         BigDecimal oneMinusLast = BigDecimal.ONE.subtract(last);
         BigDecimal desiredMinusLast = desired.subtract(last);
-        return BigDecimal.valueOf(3).multiply(last).multiply(oneMinusLast).multiply(desiredMinusLast);
+        return BigDecimal.valueOf(SIGMOID_ALPHA).multiply(last).multiply(oneMinusLast).multiply(desiredMinusLast);
     }
 
     private class TrainingStats {

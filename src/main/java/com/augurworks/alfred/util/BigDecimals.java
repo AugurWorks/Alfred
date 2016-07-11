@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 
+import com.augurworks.alfred.RectNetFixed;
+
 public class BigDecimals {
 
     public static final int DEFAULT_PRECISION = 40;
@@ -49,8 +51,8 @@ public class BigDecimals {
         //	1.0 / (1.0 + Math.exp(-3.0 * input));
         return BigDecimal.ONE.divide(
                 BigDecimal.ONE.add(
-                        BigDecimals.exp(BigDecimal.valueOf(-3).multiply(input,
-                                                                        BigDecimals.MATH_CONTEXT)),
+                        BigDecimals.exp(BigDecimal.valueOf(-RectNetFixed.SIGMOID_ALPHA).multiply(input,
+                                BigDecimals.MATH_CONTEXT)),
                         BigDecimals.MATH_CONTEXT),
                 BigDecimals.MATH_CONTEXT);
     }
