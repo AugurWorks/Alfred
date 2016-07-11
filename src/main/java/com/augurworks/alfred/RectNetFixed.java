@@ -477,13 +477,11 @@ public class RectNetFixed extends Net {
     }
 
     private class TrainingStats {
-        public long startTime;
         public TrainingStopReason stopReason;
         public boolean brokeAtLocalMax;
         public BigDecimal maxScore;
 
-        public TrainingStats(long start) {
-            this.startTime = start;
+        public TrainingStats() {
             this.brokeAtLocalMax = false;
             this.stopReason = TrainingStopReason.HIT_TRAINING_LIMIT;
             this.maxScore = BigDecimal.valueOf(NEGATIVE_INFINITY);
@@ -507,108 +505,110 @@ public class RectNetFixed extends Net {
      * @throws InterruptedException
      */
     public RectNetFixed train(String name,
-                                     List<String> trainLines,
-                                     boolean verbose,
-                                     long trainingTimeLimitMillis,
-                                     ScaleFunctionType sfType,
-                                     int triesRemaining,
-                                     StatsTracker stats) throws InterruptedException {
-
-        if (trainingTimeLimitMillis <= 0) {
-            log.info("Training timeout was {}, which is <= 0, so jobs will not time out.", trainingTimeLimitMillis);
-        }
-        if (triesRemaining == 0) {
-            throw new IllegalStateException("Unable to train file " + name + "!");
-        }
-        NetTrainSpecification netSpec = parseLines(trainLines, sfType, verbose);
-        MDC.put("performanceCutoff", netSpec.getPerformanceCutoff());
-        MDC.put("learningConstant", netSpec.getLearningConstant());
-        MDC.put("minTrainingRounds", netSpec.getMinTrainingRounds());
-        RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide());
-        net.setData(netSpec.getNetData());
-        net.setTimingInfo(TimingInfo.withDuration(trainingTimeLimitMillis));
-        // Actually do the training part
-        TrainingStats trainingStats = new TrainingStats(System.currentTimeMillis());
-
-        int fileIteration = 0;
-        BigDecimal score = null;
-
-        List<InputsAndTarget> inputsAndTargets = netSpec.getNetData().getTrainData();
-        for (fileIteration = 0; fileIteration < netSpec.getNumberFileIterations(); fileIteration++) {
-
-            // train all data rows for numberRowIterations times.
-            for (int lcv = 0; lcv < inputsAndTargets.size() && !net.hasTimeExpired(); lcv++) {
-                InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
-                net.train(inputsAndTarget.getInputs(),
-                          inputsAndTarget.getTarget(),
-                          netSpec.getNumberRowIterations(),
-                          netSpec.getLearningConstant());
+                              List<String> trainLines,
+                              boolean verbose,
+                              long trainingTimeLimitMillis,
+                              ScaleFunctionType sfType,
+                              int maxTries,
+                              StatsTracker stats) throws InterruptedException {
+        boolean completed = false;
+        int tryNumber = 0;
+        while (!completed && tryNumber < maxTries) {
+            if (trainingTimeLimitMillis <= 0) {
+                log.info("Training timeout was {}, which is <= 0, so jobs will not time out.", trainingTimeLimitMillis);
             }
+            NetTrainSpecification netSpec = parseLines(trainLines, sfType, verbose);
+            MDC.put("performanceCutoff", netSpec.getPerformanceCutoff());
+            MDC.put("learningConstant", netSpec.getLearningConstant());
+            MDC.put("minTrainingRounds", netSpec.getMinTrainingRounds());
+            RectNetFixed net = new RectNetFixed(netSpec.getDepth(), netSpec.getSide());
+            net.setData(netSpec.getNetData());
+            net.setTimingInfo(TimingInfo.withDuration(trainingTimeLimitMillis));
+            // Actually do the training part
+            TrainingStats trainingStats = new TrainingStats();
 
-            if (net.hasTimeExpired()) {
-                trainingStats.stopReason = TrainingStopReason.OUT_OF_TIME;
-                break;
-            }
+            int fileIteration = 0;
+            BigDecimal score = null;
 
-            // compute total score
-            score = BigDecimal.ZERO;
-            for (int lcv = 0; lcv < inputsAndTargets.size(); lcv++) {
-                InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
-                net.setInputs(inputsAndTarget.getInputs());
-                // Math.pow((targets.get(lcv) - r.getOutput()), 2)
-                BigDecimal difference = inputsAndTarget.getTarget().subtract(net.getOutput());
-                score = score.add(difference.multiply(difference));
-            }
-            score = score.multiply(BigDecimal.valueOf(-1.0));
-            score = score.divide(BigDecimal.valueOf(inputsAndTargets.size()), BigDecimals.MATH_CONTEXT);
+            List<InputsAndTarget> inputsAndTargets = netSpec.getNetData().getTrainData();
+            for (fileIteration = 0; fileIteration < netSpec.getNumberFileIterations(); fileIteration++) {
 
-            // if (score > -1 * cutoff)
-            //   ==> if (score - (-1 * cutoff) > 0)
-            //     ==> if (min(score - (-1 * cutoff), 0) == 0)
-            if (BigDecimal.ZERO.min(
-                    score.subtract(BigDecimal.valueOf(-1.0).multiply(netSpec.getPerformanceCutoff())))
-                        .equals(BigDecimal.ZERO)) {
-                trainingStats.stopReason = TrainingStopReason.HIT_PERFORMANCE_CUTOFF;
-                break;
+                // train all data rows for numberRowIterations times.
+                for (int lcv = 0; lcv < inputsAndTargets.size() && !net.hasTimeExpired(); lcv++) {
+                    InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
+                    net.train(inputsAndTarget.getInputs(),
+                              inputsAndTarget.getTarget(),
+                              netSpec.getNumberRowIterations(),
+                              netSpec.getLearningConstant());
+                }
+
+                if (net.hasTimeExpired()) {
+                    trainingStats.stopReason = TrainingStopReason.OUT_OF_TIME;
+                    break;
+                }
+
+                // compute total score
+                score = BigDecimal.ZERO;
+                for (int lcv = 0; lcv < inputsAndTargets.size(); lcv++) {
+                    InputsAndTarget inputsAndTarget = inputsAndTargets.get(lcv);
+                    net.setInputs(inputsAndTarget.getInputs());
+                    // Math.pow((targets.get(lcv) - r.getOutput()), 2)
+                    BigDecimal difference = inputsAndTarget.getTarget().subtract(net.getOutput());
+                    score = score.add(difference.multiply(difference));
+                }
+                score = score.multiply(BigDecimal.valueOf(-1.0));
+                score = score.divide(BigDecimal.valueOf(inputsAndTargets.size()), BigDecimals.MATH_CONTEXT);
+
+                // if (score > -1 * cutoff)
+                //   ==> if (score - (-1 * cutoff) > 0)
+                //     ==> if (min(score - (-1 * cutoff), 0) == 0)
+                if (BigDecimal.ZERO.min(
+                        score.subtract(BigDecimal.valueOf(-1.0).multiply(netSpec.getPerformanceCutoff())))
+                            .equals(BigDecimal.ZERO)) {
+                    trainingStats.stopReason = TrainingStopReason.HIT_PERFORMANCE_CUTOFF;
+                    break;
+                }
+                // if (score > maxScore)
+                //   ==> if (score - maxScore > 0)
+                //     ==> if (min(score - maxScore, 0) == 0)
+                if (BigDecimal.ZERO.min(score.subtract(trainingStats.maxScore)).equals(BigDecimal.ZERO)) {
+                    trainingStats.maxScore = score;
+                } else if (fileIteration < netSpec.getMinTrainingRounds()) {
+                    continue;
+                } else {
+                    trainingStats.brokeAtLocalMax = true;
+                    break;
+                }
+
+                if (fileIteration % 100 == 0) {
+                    MDC.put("netScore", score.round(new MathContext(4)).toString());
+                    double rmsError = computeRmsError(net, inputsAndTargets);
+                    log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
+                    stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
+                            netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
+                            trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
+                }
+
             }
-            // if (score > maxScore)
-            //   ==> if (score - maxScore > 0)
-            //     ==> if (min(score - maxScore, 0) == 0)
-            if (BigDecimal.ZERO.min(score.subtract(trainingStats.maxScore)).equals(BigDecimal.ZERO)) {
-                trainingStats.maxScore = score;
-            } else if (fileIteration < netSpec.getMinTrainingRounds()) {
-                continue;
+            MDC.put("netScore", score.round(new MathContext(4)).toString());
+            if (trainingStats.brokeAtLocalMax) {
+                long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
+                long timeRemaining = trainingTimeLimitMillis - timeExpired;
+                log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
             } else {
-                trainingStats.brokeAtLocalMax = true;
-                break;
-            }
-
-            if (fileIteration % 100 == 0) {
-                MDC.put("netScore", score.round(new MathContext(4)).toString());
+                int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
                 double rmsError = computeRmsError(net, inputsAndTargets);
-                log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
+                net.trainingSummary = new TrainingSummary(trainingStats.stopReason, timeExpired, fileIteration, rmsError);
+
                 stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
                         netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
                         trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
+
+                return net;
             }
-
         }
-        MDC.put("netScore", score.round(new MathContext(4)).toString());
-        if (trainingStats.brokeAtLocalMax) {
-            long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
-            long timeRemaining = trainingTimeLimitMillis - timeExpired;
-            log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
-            net = this.train(name, trainLines, verbose, timeRemaining, sfType, triesRemaining--, stats);
-        }
-        int timeExpired = (int)((System.currentTimeMillis() - net.timingInfo.getStartTime())/1000);
-        double rmsError = computeRmsError(net, inputsAndTargets);
-        net.trainingSummary = new TrainingSummary(trainingStats.stopReason, timeExpired, fileIteration, rmsError);
-
-        stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
-                netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
-                trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
-
-        return net;
+        // tried N times, now we have to give up :(.
+        throw new IllegalStateException("Unable to train file " + name + "!");
     }
 
     private double computeRmsError(RectNetFixed net, List<InputsAndTarget> inputsAndTargets) {
