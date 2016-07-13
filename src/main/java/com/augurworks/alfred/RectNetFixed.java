@@ -586,6 +586,7 @@ public class RectNetFixed {
 
             }
             MDC.put("netScore", score.round(new MathContext(4)).toString());
+            MDC.put("roundsTrained", fileIteration);
             if (trainingStats.brokeAtLocalMax) {
                 long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
                 long timeRemaining = trainingTimeLimitMillis - timeExpired;
@@ -602,6 +603,7 @@ public class RectNetFixed {
     private void logStatSnapshot(String name, StatsTracker stats, NetTrainSpecification netSpec, RectNetFixed net,
             TrainingStats trainingStats, int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets) {
         MDC.put("netScore", score.round(new MathContext(4)).toString());
+        MDC.put("roundsTrained", fileIteration);
         double rmsError = computeRmsError(net, inputsAndTargets);
         log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
         stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
