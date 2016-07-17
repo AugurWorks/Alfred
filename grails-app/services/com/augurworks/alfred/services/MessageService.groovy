@@ -9,8 +9,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 
-import javax.annotation.PostConstruct
-
 @Transactional
 class MessagingService {
 
@@ -32,8 +30,7 @@ class MessagingService {
     private Channel trainingChannel
     private Channel resultChannel
 
-    @PostConstruct
-    private void init() {
+    public void init() {
         log.info('Initializing RabbitMQ connections')
         try {
             ConnectionFactory factory = new ConnectionFactory()
