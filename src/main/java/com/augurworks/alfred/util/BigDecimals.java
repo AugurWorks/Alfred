@@ -1,10 +1,10 @@
 package com.augurworks.alfred.util;
 
+import com.augurworks.alfred.Constants;
+
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-
-import com.augurworks.alfred.RectNetFixed;
 
 public class BigDecimals {
 
@@ -51,7 +51,7 @@ public class BigDecimals {
         //	1.0 / (1.0 + Math.exp(-3.0 * input));
         return BigDecimal.ONE.divide(
                 BigDecimal.ONE.add(
-                        BigDecimals.exp(BigDecimal.valueOf(-RectNetFixed.SIGMOID_ALPHA).multiply(input,
+                        BigDecimals.exp(BigDecimal.valueOf(-Constants.SIGMOID_ALPHA).multiply(input,
                                 BigDecimals.MATH_CONTEXT)),
                         BigDecimals.MATH_CONTEXT),
                 BigDecimals.MATH_CONTEXT);
