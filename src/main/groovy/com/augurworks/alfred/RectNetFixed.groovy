@@ -3,7 +3,6 @@ package com.augurworks.alfred
 import com.augurworks.alfred.NetTrainSpecification.Builder
 import com.augurworks.alfred.domains.TrainingRun
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType
-import com.augurworks.alfred.stats.StatsTracker
 import com.augurworks.alfred.util.BigDecimals
 import com.augurworks.alfred.util.TimeUtils
 import org.apache.commons.lang3.Validate
@@ -501,8 +500,7 @@ public class RectNetFixed {
                               boolean verbose,
                               long trainingTimeLimitMillis,
                               ScaleFunctionType sfType,
-                              int maxTries,
-                              StatsTracker stats) throws InterruptedException {
+                              int maxTries) throws InterruptedException {
         boolean completed = false;
         int tryNumber = 0;
         while (!completed && tryNumber < maxTries) {
@@ -523,7 +521,7 @@ public class RectNetFixed {
             BigDecimal score = null;
 
             List<InputsAndTarget> inputsAndTargets = netSpec.getNetData().getTrainData();
-            logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets, TrainingStage.STARTING);
+            logStatSnapshot(name, netSpec, net, fileIteration, score, inputsAndTargets, TrainingStage.STARTING);
             for (fileIteration = 0; fileIteration < netSpec.getNumberFileIterations(); fileIteration++) {
 
                 // train all data rows for numberRowIterations times.
@@ -574,7 +572,7 @@ public class RectNetFixed {
                 }
 
                 if (fileIteration % 100 == 0) {
-                    logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets, TrainingStage.RUNNING);
+                    logStatSnapshot(name, netSpec, net, fileIteration, score, inputsAndTargets, TrainingStage.RUNNING);
                 }
 
             }
@@ -585,7 +583,7 @@ public class RectNetFixed {
                 long timeRemaining = trainingTimeLimitMillis - timeExpired;
                 log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
             } else {
-                logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets, TrainingStage.DONE);
+                logStatSnapshot(name, netSpec, net, fileIteration, score, inputsAndTargets, TrainingStage.DONE);
                 log.info("Training complete for {} after {} because of {}", name, (System.currentTimeMillis() - net.timingInfo.getStartTime()) / 1000, net.getTrainingRun().getTrainingStopReason().name());
                 return net;
             }
@@ -594,8 +592,8 @@ public class RectNetFixed {
         throw new IllegalStateException("Unable to train file " + name + "!");
     }
 
-    private void logStatSnapshot(String name, StatsTracker stats, NetTrainSpecification netSpec, RectNetFixed net,
-                                 TrainingStats trainingStats, int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets,
+    private void logStatSnapshot(String name, NetTrainSpecification netSpec, RectNetFixed net,
+                                 int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets,
                                  TrainingStage trainingStage) {
         MDC.put("netScore", score == null ? null : score.round(new MathContext(4)).toString());
         MDC.put("roundsTrained", fileIteration);
