@@ -1,6 +1,9 @@
 package com.augurworks.alfred.services
 
 import com.augurworks.alfred.messaging.TrainingMessage
+import com.augurworks.alfred.server.AlfredPrefs
+import com.augurworks.alfred.server.AlfredPrefsImpl
+import com.augurworks.alfred.server.AlfredWrapper
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.rabbitmq.client.*
 import grails.core.GrailsApplication
@@ -27,10 +30,12 @@ class MessagingService {
     private final ObjectMapper mapper = new ObjectMapper()
 
     GrailsApplication grailsApplication
-    AlfredService alfredService
 
     private Channel trainingChannel
     private Channel resultChannel
+
+    private AlfredPrefs prefs = new AlfredPrefsImpl();
+    private AlfredWrapper alfred = new AlfredWrapper(prefs.getNumThreads(), prefs.getTimeout(), prefs.getScaleFunction())
 
     @PostConstruct
     private void init() {
@@ -92,10 +97,11 @@ class MessagingService {
         }
     }
 
+    @Transactional
     private void processMessage(TrainingMessage message) {
         MDC.put("netId", message.getNetId());
         log.debug("Received an incoming training message");
-        String result = alfredService.trainSynchronous(message.getNetId(), message.getData());
+        String result = alfred.trainSynchronous(message.getNetId(), message.getData()).getOutput();
         sendResult(message.getNetId(), result);
     }
 
