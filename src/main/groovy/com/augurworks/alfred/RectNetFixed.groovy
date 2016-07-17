@@ -1,9 +1,9 @@
 package com.augurworks.alfred
 
 import com.augurworks.alfred.NetTrainSpecification.Builder
+import com.augurworks.alfred.domains.TrainingRun
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType
 import com.augurworks.alfred.stats.StatsTracker
-import com.augurworks.alfred.stats.StatsTracker.Snapshot
 import com.augurworks.alfred.util.BigDecimals
 import com.augurworks.alfred.util.TimeUtils
 import org.apache.commons.lang3.Validate
@@ -38,6 +38,8 @@ public class RectNetFixed {
     protected FixedNeuron output;
     private NetDataSpecification netData = null;
     private TimingInfo timingInfo = null;
+    private TrainingStopReason trainingStopReason;
+    private TrainingRun trainingRun;
 
     /**
      * Constructs a new RectNet with 10 inputs and 5 layers of network.
@@ -125,6 +127,10 @@ public class RectNetFixed {
 
     public NetDataSpecification getDataSpec() {
         return this.netData;
+    }
+
+    public TrainingRun getTrainingRun() {
+        return trainingRun;
     }
 
     /**
@@ -517,6 +523,7 @@ public class RectNetFixed {
             BigDecimal score = null;
 
             List<InputsAndTarget> inputsAndTargets = netSpec.getNetData().getTrainData();
+            logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets, TrainingStage.STARTING);
             for (fileIteration = 0; fileIteration < netSpec.getNumberFileIterations(); fileIteration++) {
 
                 // train all data rows for numberRowIterations times.
@@ -529,7 +536,7 @@ public class RectNetFixed {
                 }
 
                 if (net.hasTimeExpired()) {
-                    trainingStats.stopReason = TrainingStopReason.OUT_OF_TIME;
+                    net.trainingStopReason = TrainingStopReason.OUT_OF_TIME;
                     break;
                 }
 
@@ -550,8 +557,8 @@ public class RectNetFixed {
                 //     ==> if (min(score - (-1 * cutoff), 0) == 0)
                 if (BigDecimal.ZERO.min(
                         score.subtract(BigDecimal.valueOf(-1.0).multiply(netSpec.getPerformanceCutoff())))
-                            .equals(BigDecimal.ZERO)) {
-                    trainingStats.stopReason = TrainingStopReason.HIT_PERFORMANCE_CUTOFF;
+                        .equals(BigDecimal.ZERO)) {
+                    net.trainingStopReason = TrainingStopReason.HIT_PERFORMANCE_CUTOFF;
                     break;
                 }
                 // if (score > maxScore)
@@ -567,18 +574,19 @@ public class RectNetFixed {
                 }
 
                 if (fileIteration % 100 == 0) {
-                    logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets);
+                    logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets, TrainingStage.RUNNING);
                 }
 
             }
-            MDC.put("netScore", score.round(new MathContext(4)).toString());
+            MDC.put("netScore", score == null ? null : score.round(new MathContext(4)).toString());
             MDC.put("roundsTrained", fileIteration);
             if (trainingStats.brokeAtLocalMax) {
                 long timeExpired = System.currentTimeMillis() - net.timingInfo.getStartTime();
                 long timeRemaining = trainingTimeLimitMillis - timeExpired;
                 log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
             } else {
-                logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets);
+                logStatSnapshot(name, stats, netSpec, net, trainingStats, fileIteration, score, inputsAndTargets, TrainingStage.DONE);
+                log.info("Training complete for {} after {} because of {}", name, (System.currentTimeMillis() - net.timingInfo.getStartTime()) / 1000, net.getTrainingRun().getTrainingStopReason().name());
                 return net;
             }
         }
@@ -587,15 +595,23 @@ public class RectNetFixed {
     }
 
     private void logStatSnapshot(String name, StatsTracker stats, NetTrainSpecification netSpec, RectNetFixed net,
-            TrainingStats trainingStats, int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets) {
-        MDC.put("netScore", score.round(new MathContext(4)).toString());
+                                 TrainingStats trainingStats, int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets,
+                                 TrainingStage trainingStage) {
+        MDC.put("netScore", score == null ? null : score.round(new MathContext(4)).toString());
         MDC.put("roundsTrained", fileIteration);
         double rmsError = computeRmsError(net, inputsAndTargets);
         log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
 
-        stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
-                netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
-                trainingStats.stopReason, rmsError, netSpec.getPerformanceCutoff().doubleValue()));
+        net.trainingRun = new TrainingRun(
+                netId: name,
+                dataSets: netSpec.getNetData().getTrainData().get(0).getInputs().length,
+                rowCount: netSpec.getNumberFileIterations(),
+                learningConstant: netSpec.getLearningConstant().doubleValue(),
+                secondsElapsed: (int) (System.currentTimeMillis() - net.timingInfo.getStartTime()) / 1000,
+                roundsTrained: fileIteration,
+                rmsError: rmsError,
+                trainingStopReason: net.trainingStopReason,
+                trainingStage: trainingStage).save();
     }
 
     private double computeRmsError(RectNetFixed net, List<InputsAndTarget> inputsAndTargets) {
