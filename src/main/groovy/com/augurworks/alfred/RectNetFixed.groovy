@@ -1,21 +1,17 @@
-package com.augurworks.alfred;
+package com.augurworks.alfred
 
-import com.augurworks.alfred.NetTrainSpecification.Builder;
-import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import com.augurworks.alfred.stats.StatsTracker;
-import com.augurworks.alfred.stats.StatsTracker.Snapshot;
-import com.augurworks.alfred.util.BigDecimals;
-import com.augurworks.alfred.util.TimeUtils;
-import org.apache.commons.lang3.Validate;
-import org.apache.log4j.MDC;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.augurworks.alfred.NetTrainSpecification.Builder
+import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType
+import com.augurworks.alfred.stats.StatsTracker
+import com.augurworks.alfred.stats.StatsTracker.Snapshot
+import com.augurworks.alfred.util.BigDecimals
+import com.augurworks.alfred.util.TimeUtils
+import org.apache.commons.lang3.Validate
+import org.apache.log4j.MDC
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.util.Iterator;
-import java.util.List;
-
+import java.math.MathContext
 /**
  * Simple rectangular neural network.
  *
@@ -261,7 +257,7 @@ public class RectNetFixed {
      *         connections.
      */
     private BigDecimal initNum() {
-        return BigDecimal.valueOf((Math.random() - .5) * 1.0);
+        return BigDecimal.valueOf((Math.random() - 0.5) * 1.0);
     }
 
     /**
