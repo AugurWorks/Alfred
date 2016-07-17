@@ -27,7 +27,9 @@ environments {
         }
     }
     production {
+        grails.plugin.databasemigration.updateOnStart = true
         dataSource {
+            dbCreate = ""
             driverClassName = "com.mysql.jdbc.Driver"
             dialect = "org.hibernate.dialect.MySQL5InnoDBDialect"
             username = System.getProperty('RDS_USERNAME') ?: (System.getenv('RDS_USERNAME') ?: 'root')
