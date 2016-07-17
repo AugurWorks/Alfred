@@ -21,7 +21,6 @@ public class RectNetFixed {
 
     private static Logger log = LoggerFactory.getLogger(RectNetFixed.class);
     private static final double NEGATIVE_INFINITY = -1000000;
-    public static final double SIGMOID_ALPHA = 3;
 
     // Inputs to network
     protected InputImpl[] inputs;
@@ -427,7 +426,7 @@ public class RectNetFixed {
                 BigDecimal lastOutput = this.neurons[leftCol][leftRow].getLastOutput();
                 // since we're using alpha = 3 in the neurons
                 // 3 * lastOutput * (1 - lastOutput);
-                BigDecimal delta = BigDecimal.valueOf(SIGMOID_ALPHA).multiply(lastOutput).multiply(BigDecimal.ONE.subtract(lastOutput));
+                BigDecimal delta = BigDecimal.valueOf(Constants.SIGMOID_ALPHA).multiply(lastOutput).multiply(BigDecimal.ONE.subtract(lastOutput));
                 BigDecimal summedRightWeightDelta = BigDecimal.ZERO;
                 for (rightRow = 0; rightRow < this.y; rightRow++) {
                     if (rightCol == this.x) {
@@ -464,7 +463,7 @@ public class RectNetFixed {
         BigDecimal last = this.output.getLastOutput();
         BigDecimal oneMinusLast = BigDecimal.ONE.subtract(last);
         BigDecimal desiredMinusLast = desired.subtract(last);
-        return BigDecimal.valueOf(SIGMOID_ALPHA).multiply(last).multiply(oneMinusLast).multiply(desiredMinusLast);
+        return BigDecimal.valueOf(Constants.SIGMOID_ALPHA).multiply(last).multiply(oneMinusLast).multiply(desiredMinusLast);
     }
 
     private class TrainingStats {
