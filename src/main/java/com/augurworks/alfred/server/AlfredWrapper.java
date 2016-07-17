@@ -140,7 +140,6 @@ public class AlfredWrapper {
             long startTime = System.currentTimeMillis();
             List<String> lines = Splitter.on("\n").splitToList(augtrain);
             RectNetFixed net = new RectNetFixed().train(netId, lines, prefs.getVerbose(), timeoutSeconds * 1000, sfType, 5, stats);
-            log.info("Training complete for {} after {} because of {}", netId, TimeUtils.formatTimeSince(startTime), net.getTrainingSummary().getStopReason().name());
             jobStatusByFileName.put(netId, TrainStatus.COMPLETE);
             return net;
         } catch (Exception t) {

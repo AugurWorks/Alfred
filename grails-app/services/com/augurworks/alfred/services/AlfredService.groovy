@@ -1,7 +1,6 @@
 package com.augurworks.alfred.services
 
 import com.augurworks.alfred.RectNetFixed
-import com.augurworks.alfred.domains.TrainingRun
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType
 import com.augurworks.alfred.server.AlfredPrefs
 import com.augurworks.alfred.server.AlfredPrefsImpl
@@ -71,9 +70,7 @@ class AlfredService {
     }
 
     public String trainSynchronous(String netId, String augtrain) {
-        RectNetFixed rectNetFixed = alfred.trainSynchronous(netId, augtrain)
-        TrainingRun.fromTrainingSummary(rectNetFixed.getTrainingSummary()).save()
-        return rectNetFixed.getAugout();
+        return alfred.trainSynchronous(netId, augtrain).getAugout();
     }
 
     public String getResult(String name) {

@@ -38,7 +38,6 @@ public class RectNetFixed {
     protected FixedNeuron output;
     private NetDataSpecification netData = null;
     private TimingInfo timingInfo = null;
-    private TrainingSummary trainingSummary = null;
 
     /**
      * Constructs a new RectNet with 10 inputs and 5 layers of network.
@@ -126,10 +125,6 @@ public class RectNetFixed {
 
     public NetDataSpecification getDataSpec() {
         return this.netData;
-    }
-
-    public TrainingSummary getTrainingSummary() {
-        return trainingSummary;
     }
 
     /**
@@ -324,11 +319,6 @@ public class RectNetFixed {
      */
     public String getAugout() {
         StringBuilder sb = new StringBuilder();
-        TrainingSummary summary = this.getTrainingSummary();
-        sb.append("Training stop reason: ").append(summary.getStopReason().getExplanation()).append("\n");
-        sb.append("Time trained: ").append(summary.getSecondsElapsed()).append("\n");
-        sb.append("Rounds trained: ").append(summary.getRoundsTrained()).append("\n");
-        sb.append("RMS Error: ").append(summary.getRmsError()).append("\n");
         for (InputsAndTarget trainDatum : this.getDataSpec().getTrainData()) {
             writeDataLine(sb, trainDatum);
         }
@@ -602,7 +592,6 @@ public class RectNetFixed {
         MDC.put("roundsTrained", fileIteration);
         double rmsError = computeRmsError(net, inputsAndTargets);
         log.debug("Net {} has trained for {} rounds, RMS Error: {}", name, fileIteration, rmsError);
-        net.trainingSummary = new TrainingSummary(name, netSpec.getNetData().getTrainData().get(0).getInputs().length, netSpec.getNumberFileIterations(), netSpec.getLearningConstant().doubleValue(), trainingStats.stopReason, (int) (System.currentTimeMillis() - net.timingInfo.getStartTime()), fileIteration, rmsError);
 
         stats.addSnapshot(new Snapshot(fileIteration, System.currentTimeMillis() - net.timingInfo.getStartTime(),
                 netSpec.getNumberFileIterations(), name, netSpec.getLearningConstant().doubleValue(), true,
