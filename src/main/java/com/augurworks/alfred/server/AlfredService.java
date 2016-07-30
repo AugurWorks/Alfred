@@ -11,5 +11,4 @@ public interface AlfredService {
     String trainSynchronous(String netId, String augtrain);
     String getResult(String name);
     TrainStatus getStatus(String name);
-    String getStats();
 }

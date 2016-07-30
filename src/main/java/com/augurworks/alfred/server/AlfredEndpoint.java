@@ -54,11 +54,6 @@ public class AlfredEndpoint {
         return id;
     }
 
-    @RequestMapping(value = "/stats", method = RequestMethod.GET, produces = "application/json")
-    public @ResponseBody String getStats() {
-        return service.getStats();
-    }
-
     @ApiIgnore
     @RequestMapping(value="/", method = RequestMethod.GET)
     public @ResponseBody ModelAndView root() {

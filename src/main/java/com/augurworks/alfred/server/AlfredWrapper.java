@@ -2,9 +2,6 @@ package com.augurworks.alfred.server;
 
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import com.augurworks.alfred.stats.StatsTracker;
-import com.augurworks.alfred.stats.StatsTracker.Snapshot;
-import com.augurworks.alfred.stats.UsageTracker;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
@@ -33,8 +30,6 @@ public class AlfredWrapper {
     private final int timeoutSeconds;
     private final Semaphore semaphore;
     private final ScaleFunctionType sfType;
-    private final UsageTracker usage = new UsageTracker();
-    private final StatsTracker stats;
     private AlfredPrefs prefs;
 
     public AlfredWrapper(int numThreads, int timeoutSeconds, ScaleFunctionType sfType) {
@@ -45,7 +40,6 @@ public class AlfredWrapper {
         this.jobStatusByFileName = Maps.newConcurrentMap();
         this.futuresByFileName = Maps.newConcurrentMap();
         this.prefs = new AlfredPrefsImpl();
-        this.stats = new StatsTracker(prefs.getStatsHistory());
     }
 
     public void shutdownNow() {
@@ -110,14 +104,6 @@ public class AlfredWrapper {
         }
     }
 
-    public String printStatus() {
-        String sb = "Server Status:\n" + "  Jobs in progress : " + usage.getJobsInProgress() + "\n" +
-                "  Jobs submitted   : " + usage.getJobsSubmitted() + "\n" +
-                "  Jobs completed   : " + usage.getJobsCompleted() + "\n" +
-                getCurrentJobStatusesPretty();
-        return sb;
-    }
-
     private Callable<RectNetFixed> getTrainCallable(final String name, final String augtrain) {
         return () -> trainSynchronous(name, augtrain);
     }
@@ -127,30 +113,22 @@ public class AlfredWrapper {
         MDC.put("trainingTimeLimitSec", timeoutSeconds);
         MDC.put("scaleFunctionType", sfType.name());
 
-        usage.incrementJobsSubmitted();
         jobStatusByFileName.put(netId, TrainStatus.SUBMITTED);
         try {
             semaphore.acquire();
-            usage.incrementJobsInProgress();
             jobStatusByFileName.put(netId, TrainStatus.IN_PROGRESS);
 
             log.info("Starting training for file {} with time limit of {} seconds.", netId, timeoutSeconds);
             long startTime = System.currentTimeMillis();
             List<String> lines = Splitter.on("\n").splitToList(augtrain);
-            RectNetFixed net = new RectNetFixed().train(netId, lines, prefs.getVerbose(), timeoutSeconds * 1000, sfType, 5, stats);
+            RectNetFixed net = new RectNetFixed().train(netId, lines, prefs.getVerbose(), timeoutSeconds * 1000, sfType, 5);
             jobStatusByFileName.put(netId, TrainStatus.COMPLETE);
             return net;
         } catch (Exception t) {
             log.error("Exception caught during evaluation of " + netId, t);
         } finally {
             semaphore.release();
-            usage.incrementJobsInProgress();
-            usage.incrementJobsCompleted();
         }
         return null;
-    }
-
-    public List<Snapshot> getStats() {
-        return stats.getStats();
     }
 }
