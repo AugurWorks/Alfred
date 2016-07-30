@@ -17,8 +17,7 @@ argfile*
 
 libs
 
-gradlew*
-gradle/*
+gradle*
 
 activemq-data/
 
