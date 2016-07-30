@@ -328,11 +328,6 @@ public class RectNetFixed {
      */
     public String getAugout() {
         StringBuilder sb = new StringBuilder();
-        TrainingSummary summary = this.getTrainingSummary();
-        sb.append("Training stop reason: ").append(summary.getStopReason().getExplanation()).append("\n");
-        sb.append("Time trained: ").append(summary.getSecondsElapsed()).append("\n");
-        sb.append("Rounds trained: ").append(summary.getRoundsTrained()).append("\n");
-        sb.append("RMS Error: ").append(summary.getRmsError()).append("\n");
         for (InputsAndTarget trainDatum : this.getDataSpec().getTrainData()) {
             writeDataLine(sb, trainDatum);
         }
