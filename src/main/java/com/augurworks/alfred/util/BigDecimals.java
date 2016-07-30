@@ -40,12 +40,12 @@ public class BigDecimals {
     }
 
     /**
-     * Performs the sigmoid function on an input y = 1 / (1 + exp(-alpha*x))
+     * Performs the sigmoid function on an input height = 1 / (1 + exp(-alpha*depth))
      * Used internally in getOutput method. Alpha is set to 3 currently.
      *
      * @param input
      *            X
-     * @return sigmoid(x)
+     * @return sigmoid(depth)
      */
     public static BigDecimal sigmoid(BigDecimal input) {
         //	1.0 / (1.0 + Math.exp(-3.0 * input));

@@ -36,10 +36,6 @@ public class RectNetFixed {
     // Every neuron with the same i is in the
     // same "layer". Indexed as [col][row].
     protected FixedNeuron[][] neurons;
-    // X is depth of network
-    protected final int x;
-    // Y is height of network (number of inputs)
-    protected final int y;
     // There's only one final output neuron
     // since this is built to make booleans.
     protected FixedNeuron output;
@@ -54,8 +50,6 @@ public class RectNetFixed {
             throw new IllegalArgumentException("Depth and numInputs must be >= 1");
         }
         this.name = netId;
-        this.x = netSpec.getDepth();
-        this.y = netSpec.getSide();
         init();
     }
 
@@ -78,10 +72,10 @@ public class RectNetFixed {
         Validate.isTrue(leftRow >= 0);
         Validate.isTrue(rightCol >= 0);
         Validate.isTrue(rightRow >= 0);
-        Validate.isTrue(leftCol < this.x);
-        Validate.isTrue(rightCol < this.x);
-        Validate.isTrue(leftRow < this.y);
-        Validate.isTrue(rightRow < this.y);
+        Validate.isTrue(leftCol < this.netSpec.getDepth());
+        Validate.isTrue(rightCol < this.netSpec.getDepth());
+        Validate.isTrue(leftRow < this.netSpec.getSide());
+        Validate.isTrue(rightRow < this.netSpec.getSide());
         return this.neurons[rightCol][rightRow].getWeight(leftRow);
     }
 
@@ -110,40 +104,40 @@ public class RectNetFixed {
     }
 
     private void initNeuronConnections() {
-        for (int j = 0; j < this.y; j++) {
+        for (int j = 0; j < this.netSpec.getSide(); j++) {
             this.neurons[0][j].addInput(this.inputs[j], BigDecimal.ONE);
         }
         // Make connections between neurons and neurons.
-        for (int leftCol = 0; leftCol < this.x - 1; leftCol++) {
+        for (int leftCol = 0; leftCol < this.netSpec.getDepth() - 1; leftCol++) {
             int rightCol = leftCol + 1;
-            for (int leftRow = 0; leftRow < this.y; leftRow++) {
-                for (int rightRow = 0; rightRow < this.y; rightRow++) {
+            for (int leftRow = 0; leftRow < this.netSpec.getSide(); leftRow++) {
+                for (int rightRow = 0; rightRow < this.netSpec.getSide(); rightRow++) {
                     this.neurons[rightCol][rightRow].addInput(
                             this.neurons[leftCol][leftRow], initNum());
                 }
             }
         }
         // Make connections between output and neurons.
-        for (int j = 0; j < this.y; j++) {
-            this.output.addInput(this.neurons[this.x - 1][j], initNum());
+        for (int j = 0; j < this.netSpec.getSide(); j++) {
+            this.output.addInput(this.neurons[this.netSpec.getDepth() - 1][j], initNum());
         }
     }
 
     private void initEmptyNeurons() {
         // Initialize arrays to blank neurons and inputs.
-        this.inputs = new InputImpl[y];
-        this.neurons = new FixedNeuron[x][y];
-        this.output = new FixedNeuron(this.y);
+        this.inputs = new InputImpl[this.netSpec.getSide()];
+        this.neurons = new FixedNeuron[this.getNetSpec().getDepth()][this.netSpec.getSide()];
+        this.output = new FixedNeuron(this.netSpec.getSide());
         // Name the neurons for possible debug. This is not a critical
         // step.
         this.output.setName("output");
-        for (int j = 0; j < this.y; j++) {
+        for (int j = 0; j < this.netSpec.getSide(); j++) {
             this.inputs[j] = new InputImpl();
             // initialize the first row
             this.neurons[0][j] = new FixedNeuron(1);
             this.neurons[0][j].setName("(" + 0 + "," + j + ")");
-            for (int i = 1; i < this.x; i++) {
-                this.neurons[i][j] = new FixedNeuron(this.y);
+            for (int i = 1; i < this.netSpec.getDepth(); i++) {
+                this.neurons[i][j] = new FixedNeuron(this.netSpec.getSide());
                 this.neurons[i][j].setName("(" + i + "," + j + ")");
             }
         }
@@ -167,8 +161,8 @@ public class RectNetFixed {
      *            array of double to set as network inputs.
      */
     public void setInputs(BigDecimal[] inputs) {
-        Validate.isTrue(inputs.length == this.y);
-        for (int j = 0; j < this.y; j++) {
+        Validate.isTrue(inputs.length == this.netSpec.getSide());
+        for (int j = 0; j < this.netSpec.getSide(); j++) {
             this.inputs[j].setValue(inputs[j]);
         }
     }
@@ -177,20 +171,20 @@ public class RectNetFixed {
      * Returns the output value from this network run.
      */
     public BigDecimal getOutput() {
-        BigDecimal[] outs = new BigDecimal[this.y];
-        BigDecimal[] ins = new BigDecimal[this.y];
-        for (int j = 0; j < this.y; j++) {
+        BigDecimal[] outs = new BigDecimal[this.netSpec.getSide()];
+        BigDecimal[] ins = new BigDecimal[this.netSpec.getSide()];
+        for (int j = 0; j < this.netSpec.getSide(); j++) {
             // require recursion (depth = 0) here.
             ins[j] = this.neurons[0][j].getOutput();
         }
         // indexing must start at 1, because we've already computed
         // the output from the 0th row in the previous 3 lines.
-        for (int i = 1; i < this.x; i++) {
-            for (int j = 0; j < this.y; j++) {
+        for (int i = 1; i < this.netSpec.getDepth(); i++) {
+            for (int j = 0; j < this.netSpec.getSide(); j++) {
                 outs[j] = this.neurons[i][j].getOutput(ins);
             }
             ins = outs;
-            outs = new BigDecimal[this.y];
+            outs = new BigDecimal[this.netSpec.getSide()];
         }
         return this.output.getOutput(ins);
     }
@@ -212,7 +206,7 @@ public class RectNetFixed {
     public void train(BigDecimal[] inputs, BigDecimal desired, int iterations,
             BigDecimal learningConstant) throws InterruptedException {
         Validate.isTrue(iterations > 0);
-        Validate.isTrue(inputs.length == this.y);
+        Validate.isTrue(inputs.length == this.netSpec.getSide());
         for (int lcv = 0; lcv < iterations && !hasTimeExpired(); lcv++) {
             doIteration(inputs, desired, learningConstant);
         }
@@ -283,10 +277,10 @@ public class RectNetFixed {
         int leftRow;
         int rightCol;
         int rightRow;
-        for (leftCol = this.x - 2; leftCol >= 0; leftCol--) {
+        for (leftCol = this.netSpec.getDepth() - 2; leftCol >= 0; leftCol--) {
             rightCol = leftCol + 1;
-            for (leftRow = 0; leftRow < this.y; leftRow++) {
-                for (rightRow = 0; rightRow < this.y; rightRow++) {
+            for (leftRow = 0; leftRow < this.netSpec.getSide(); leftRow++) {
+                for (rightRow = 0; rightRow < this.netSpec.getSide(); rightRow++) {
                     // w' = w + r*i*delta
                     // r is the learning constant
                     // i is the output from the leftward neuron
@@ -301,35 +295,35 @@ public class RectNetFixed {
 
     private void updateLastNeuronWeights(BigDecimal learningConstant,
             BigDecimal deltaF) {
-        for (int j = 0; j < this.y; j++) {
+        for (int j = 0; j < this.netSpec.getSide(); j++) {
             // w' = w + r*i*delta
             // r is the learning constant
             // i is the output from the leftward neuron
-            BigDecimal dw = learningConstant.multiply(this.neurons[this.x - 1][j].getLastOutput()).multiply(deltaF);
+            BigDecimal dw = learningConstant.multiply(this.neurons[this.netSpec.getDepth() - 1][j].getLastOutput()).multiply(deltaF);
             this.output.changeWeight(j, dw);
         }
     }
 
     private BigDecimal[][] computeInteriorDeltas(BigDecimal deltaF) {
-        BigDecimal[][] deltas = new BigDecimal[this.x + 1][this.y];
+        BigDecimal[][] deltas = new BigDecimal[this.netSpec.getDepth() + 1][this.netSpec.getSide()];
         // spoof the rightmost deltas
-        for (int j = 0; j < y; j++) {
-            deltas[this.x][j] = deltaF;
+        for (int j = 0; j < this.netSpec.getSide(); j++) {
+            deltas[this.netSpec.getDepth()][j] = deltaF;
         }
         int leftCol;
         int leftRow;
         int rightCol;
         int rightRow;
-        for (leftCol = this.x - 1; leftCol >= 0; leftCol--) {
+        for (leftCol = this.netSpec.getDepth() - 1; leftCol >= 0; leftCol--) {
             rightCol = leftCol + 1;
-            for (leftRow = 0; leftRow < this.y; leftRow++) {
+            for (leftRow = 0; leftRow < this.netSpec.getSide(); leftRow++) {
                 BigDecimal lastOutput = this.neurons[leftCol][leftRow].getLastOutput();
                 // since we're using alpha = 3 in the neurons
                 // 3 * lastOutput * (1 - lastOutput);
                 BigDecimal delta = BigDecimal.valueOf(SIGMOID_ALPHA).multiply(lastOutput).multiply(BigDecimal.ONE.subtract(lastOutput));
                 BigDecimal summedRightWeightDelta = BigDecimal.ZERO;
-                for (rightRow = 0; rightRow < this.y; rightRow++) {
-                    if (rightCol == this.x) {
+                for (rightRow = 0; rightRow < this.netSpec.getSide(); rightRow++) {
+                    if (rightCol == this.netSpec.getDepth()) {
                         summedRightWeightDelta = summedRightWeightDelta.add(this.output.getWeight(leftRow).multiply(deltaF));
                         // without the break, we were adding too many of the
                         // contributions of the output node when computing
