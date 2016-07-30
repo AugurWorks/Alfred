@@ -121,7 +121,7 @@ public class AlfredWrapper {
             log.info("Starting training for file {} with time limit of {} seconds.", netId, timeoutSeconds);
             long startTime = System.currentTimeMillis();
             List<String> lines = Splitter.on("\n").splitToList(augtrain);
-            RectNetFixed net = new RectNetFixed().train(netId, lines, prefs.getVerbose(), timeoutSeconds * 1000, sfType, 5);
+            RectNetFixed net = new RectNetFixed(netId, lines, sfType).train(timeoutSeconds * 1000, 5);
             jobStatusByFileName.put(netId, TrainStatus.COMPLETE);
             return net;
         } catch (Exception t) {
