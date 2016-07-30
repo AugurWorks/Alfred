@@ -12,6 +12,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 
+import javax.annotation.PostConstruct
+
 @Transactional
 class MessagingService {
 
@@ -35,6 +37,7 @@ class MessagingService {
     private AlfredPrefs prefs = new AlfredPrefsImpl();
     private AlfredWrapper alfred = new AlfredWrapper(prefs.getNumThreads(), prefs.getTimeout(), prefs.getScaleFunction())
 
+    @PostConstruct
     private void init() {
         log.info('Initializing RabbitMQ connections')
         try {
