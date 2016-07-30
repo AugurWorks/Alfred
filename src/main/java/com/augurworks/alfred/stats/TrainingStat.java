@@ -11,13 +11,14 @@ public class TrainingStat implements Serializable {
 
     private final String netId;
     private final Integer dataSets;
-    private final Integer rowCount;
     private final Double learningConstant;
-    private final Integer secondsElapsed;
-    private final Integer roundsTrained;
-    private final Double rmsError;
-    private final TrainingStopReason trainingStopReason;
-    private final TrainingStage trainingStage;
+    private final Integer rowCount;
+
+    private Integer secondsElapsed;
+    private Integer roundsTrained;
+    private Double rmsError;
+    private TrainingStopReason trainingStopReason;
+    private TrainingStage trainingStage;
 
     private Date dateCreated = new Date();
 }

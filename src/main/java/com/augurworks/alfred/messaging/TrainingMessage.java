@@ -1,6 +1,7 @@
 package com.augurworks.alfred.messaging;
 
 import com.augurworks.alfred.stats.TrainingStat;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,12 +11,8 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class TrainingMessage implements Serializable {
-
-    TrainingMessage(String netId, String data) {
-        this.netId = netId;
-        this.data = data;
-    }
 
     private String netId;
     private String data;

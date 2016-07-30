@@ -1,5 +1,7 @@
 package com.augurworks.alfred.server;
 
+import com.augurworks.alfred.RectNetFixed;
+
 import java.util.concurrent.TimeUnit;
 
 public interface AlfredService {
@@ -8,7 +10,7 @@ public interface AlfredService {
     void shutdownAndAwaitTermination(long timeout, TimeUnit unit);
     void shutdownImmediate();
     void train(String name, String augtrain);
-    String trainSynchronous(String netId, String augtrain);
+    RectNetFixed trainSynchronous(String netId, String augtrain);
     String getResult(String name);
     TrainStatus getStatus(String name);
 }
