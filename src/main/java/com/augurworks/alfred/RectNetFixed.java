@@ -40,7 +40,6 @@ public class RectNetFixed {
     protected FixedNeuron output;
     private NetDataSpecification netData = null;
     private TimingInfo timingInfo = null;
-    private TrainingSummary trainingSummary = null;
 
     /**
      * Constructs a new RectNet with 10 inputs and 5 layers of network.
@@ -92,24 +91,6 @@ public class RectNetFixed {
         return this.neurons[rightCol][rightRow].getWeight(leftRow);
     }
 
-    /**
-     * Returns the width of this net
-     *
-     * @return the width of this net
-     */
-    public int getX() {
-        return x;
-    }
-
-    /**
-     * returns the height of this net
-     *
-     * @return the height of this net
-     */
-    public int getY() {
-        return y;
-    }
-
     public void setData(NetDataSpecification dataSpec) {
         this.netData = dataSpec;
     }
@@ -128,72 +109,6 @@ public class RectNetFixed {
 
     public NetDataSpecification getDataSpec() {
         return this.netData;
-    }
-
-    public TrainingSummary getTrainingSummary() {
-        return trainingSummary;
-    }
-
-    /**
-     * Returns the weight from the output neuron to an input specified by the
-     * given row.
-     *
-     * @param leftRow
-     *            the column containing the neuron to the left of the output
-     *            neuron.
-     * @return the weight from the output neuron to the neuron in leftRow
-     */
-    public BigDecimal getOutputNeuronWeight(int leftRow) {
-        Validate.isTrue(leftRow >= 0);
-        Validate.isTrue(leftRow < this.y);
-        return this.output.getWeight(leftRow);
-    }
-
-    /**
-     * Sets the weight from the output neuron to an input specified by the given
-     * row
-     *
-     * @param leftRow
-     *            the row containing the neuron to the left of the output
-     *            neuron.
-     * @param w
-     *            the new weight from the output neuron to the neuron at leftRow
-     */
-    public void setOutputNeuronWeight(int leftRow, BigDecimal w) {
-        Validate.isTrue(leftRow >= 0);
-        Validate.isTrue(leftRow < this.y);
-        this.output.setWeight(leftRow, w);
-    }
-
-    /**
-     * Sets the weight between two neurons to the given value w. Only works for
-     * internal layers (not the output neuron layer).
-     *
-     * @param leftCol
-     *            column number of neuron to left of connection
-     * @param leftRow
-     *            row number of neuron to left of connections
-     * @param rightCol
-     *            column number of neuron to right of connection
-     * @param rightRow
-     *            row number of neuron to right of connection
-     * @param w
-     *            weight to set on connection.
-     */
-    public void setWeight(int leftCol, int leftRow, int rightCol, int rightRow,
-            BigDecimal w) {
-        Validate.isTrue(leftCol >= 0);
-        Validate.isTrue(leftRow >= 0);
-        // right column should be >= 1 because the weights from first row to
-        // inputs should never be changed
-        Validate.isTrue(rightCol >= 1);
-        Validate.isTrue(rightCol - leftCol == 1);
-        Validate.isTrue(rightRow >= 0);
-        Validate.isTrue(leftCol < this.y);
-        Validate.isTrue(rightCol < this.y);
-        Validate.isTrue(leftRow < this.x);
-        Validate.isTrue(rightRow < this.x);
-        this.neurons[rightCol][rightRow].setWeight(leftRow, w);
     }
 
     /**
