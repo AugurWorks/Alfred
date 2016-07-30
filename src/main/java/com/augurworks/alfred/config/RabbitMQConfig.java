@@ -3,6 +3,8 @@ package com.augurworks.alfred.config;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +43,8 @@ public class RabbitMQConfig {
         log.info("Creating training RabbitMQ channel {}", getTrainingChannelName(env));
         try {
             Channel channel = getConnection().createChannel();
-            channel.queueDeclare(getTrainingChannelName(env), false, false, false, null);
+            channel.basicQos(1);
+            channel.queueDeclare(getTrainingChannelName(env), true, false, false, null);
             return channel;
         } catch (IOException | TimeoutException e) {
             log.error("Could not connect to RabbitMQ", e);
@@ -54,7 +57,7 @@ public class RabbitMQConfig {
         log.info("Creating results RabbitMQ channel {}", getResultsChannelName(env));
         try {
             Channel channel = getConnection().createChannel();
-            channel.queueDeclare(getResultsChannelName(env), false, false, false, null);
+            channel.queueDeclare(getResultsChannelName(env), true, false, false, null);
             return channel;
         } catch (IOException | TimeoutException e) {
             log.error("Could not connect to RabbitMQ", e);
@@ -68,7 +71,18 @@ public class RabbitMQConfig {
         factory.setPassword(password);
         factory.setHost(hostname);
         factory.setPort(portnum);
-        return factory.newConnection();
+        factory.setRequestedHeartbeat(1);
+        factory.setConnectionTimeout(5000);
+        factory.setAutomaticRecoveryEnabled(true);
+        factory.setTopologyRecoveryEnabled(true);
+
+        Connection connection = factory.newConnection();
+        connection.addShutdownListener(new ShutdownListener() {
+            public void shutdownCompleted(ShutdownSignalException e) {
+                log.error("RabbitMQ connection lost", e);
+            }
+        });
+        return connection;
     }
 
     public static String getTrainingChannelName(String env) {
