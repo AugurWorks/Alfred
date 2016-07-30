@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -17,5 +16,5 @@ public class TrainingMessage implements Serializable {
     private String netId;
     private String data;
 
-    private List<TrainingStat> trainingStats = new ArrayList<>();
+    private List<TrainingStat> trainingStats;
 }
