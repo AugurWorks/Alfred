@@ -1,8 +1,8 @@
 package com.augurworks.alfred;
 
-import com.augurworks.alfred.NetTrainSpecification.Builder;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 import com.augurworks.alfred.util.BigDecimals;
+import com.augurworks.alfred.util.FileParser;
 import com.augurworks.alfred.util.TimeUtils;
 import lombok.Data;
 import org.apache.commons.lang3.Validate;
@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -50,7 +49,7 @@ public class RectNetFixed {
      * Constructs a new RectNet with 10 inputs and 5 layers of network.
      */
     public RectNetFixed(String netId, List<String> trainLines, ScaleFunctionType scaleFunctionType) {
-        this.netSpec = parseLines(trainLines, scaleFunctionType);
+        this.netSpec = FileParser.parseLines(trainLines, scaleFunctionType);
         if (netSpec.getDepth() < 1 || netSpec.getSide() < 1) {
             throw new IllegalArgumentException("Depth and numInputs must be >= 1");
         }
@@ -502,72 +501,5 @@ public class RectNetFixed {
         } else {
             return Math.sqrt(totalRmsError / (1.0 * inputsAndTargets.size()));
         }
-    }
-
-    public NetTrainSpecification parseLines(List<String> augtrain, ScaleFunctionType sfType) {
-        NetTrainSpecification.Builder netTrainingSpecBuilder = new Builder();
-        netTrainingSpecBuilder.scaleFunctionType(sfType);
-        Validate.isTrue(augtrain.size() >= 4, "Cannot parse file with no data");
-
-        Iterator<String> fileLineIterator = augtrain.iterator();
-        parseSizeLine(netTrainingSpecBuilder, fileLineIterator);
-        parseTrainingInfoLine(netTrainingSpecBuilder, fileLineIterator);
-        // skip the titles line
-        fileLineIterator.next();
-        while (fileLineIterator.hasNext()) {
-            parseDataLine(netTrainingSpecBuilder, fileLineIterator);
-        }
-        return netTrainingSpecBuilder.build();
-    }
-
-    private void parseDataLine(
-            NetTrainSpecification.Builder netTrainingSpec,
-            Iterator<String> fileLineIterator) {
-        String dataLine = fileLineIterator.next();
-        String[] dataLineSplit = dataLine.split(" ");
-        String date = dataLineSplit[0];
-        String target = dataLineSplit[1];
-        // inputs
-        BigDecimal[] input = new BigDecimal[netTrainingSpec.getSide()];
-        dataLineSplit = dataLineSplit[2].split(",");
-        for (int i = 0; i < netTrainingSpec.getSide(); i++) {
-            input[i] = BigDecimal.valueOf(Double.valueOf(dataLineSplit[i]));
-        }
-
-        if (target.equalsIgnoreCase("NULL")) {
-            netTrainingSpec.addPredictionRow(input, date);
-        } else {
-            BigDecimal targetVal = BigDecimal.valueOf(Double.valueOf(target));
-            netTrainingSpec.addInputAndTarget(input, targetVal, date);
-        }
-    }
-
-    private void parseTrainingInfoLine(
-            NetTrainSpecification.Builder netTrainingSpec,
-            Iterator<String> fileLineIterator) {
-        String trainingInfoLine = fileLineIterator.next();
-        String[] trainingInfoLineSplit = trainingInfoLine.split(" ");
-        trainingInfoLineSplit = trainingInfoLineSplit[1].split(",");
-        int rowInterations = Integer.valueOf(trainingInfoLineSplit[0]);
-        int fileIterations = Integer.valueOf(trainingInfoLineSplit[1]);
-        BigDecimal learningConstant = BigDecimal.valueOf(Double.valueOf(trainingInfoLineSplit[2]));
-        int minTrainingRounds = Integer.valueOf(trainingInfoLineSplit[3]);
-        BigDecimal cutoff = BigDecimal.valueOf(Double.valueOf(trainingInfoLineSplit[4]));
-
-        netTrainingSpec.minTrainingRounds(minTrainingRounds);
-        netTrainingSpec.learningConstant(learningConstant);
-        netTrainingSpec.rowIterations(rowInterations);
-        netTrainingSpec.fileIterations(fileIterations);
-        netTrainingSpec.performanceCutoff(cutoff);
-    }
-
-    private void parseSizeLine(
-            NetTrainSpecification.Builder netTrainingSpec,
-            Iterator<String> fileLineIterator) {
-        String sizeLine = fileLineIterator.next();
-        String[] sizeLineSplit = sizeLine.split(" ");
-        sizeLineSplit = sizeLineSplit[1].split(",");
-        netTrainingSpec.side(Integer.valueOf(sizeLineSplit[0]));
-        netTrainingSpec.depth(Integer.valueOf(sizeLineSplit[1]));
     }
 }
