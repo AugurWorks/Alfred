@@ -50,15 +50,6 @@ public class AlfredWrapper {
         return ImmutableMap.copyOf(jobStatusByFileName);
     }
 
-    public String getCurrentJobStatusesPretty() {
-        StringBuilder sb = new StringBuilder("Current job statuses: \n");
-        for (Map.Entry<String, TrainStatus> entry : getCurrentJobStatuses().entrySet()) {
-            sb.append("\t").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
-        sb.append("\n");
-        return sb.toString();
-    }
-
     public void shutdownAndAwaitTermination(long timeout, TimeUnit unit) {
         exec.shutdown();
         try {
@@ -119,7 +110,6 @@ public class AlfredWrapper {
             jobStatusByFileName.put(netId, TrainStatus.IN_PROGRESS);
 
             log.info("Starting training for file {} with time limit of {} seconds.", netId, timeoutSeconds);
-            long startTime = System.currentTimeMillis();
             List<String> lines = Splitter.on("\n").splitToList(augtrain);
             RectNetFixed net = new RectNetFixed(netId, lines, sfType).train(timeoutSeconds * 1000, 5);
             jobStatusByFileName.put(netId, TrainStatus.COMPLETE);

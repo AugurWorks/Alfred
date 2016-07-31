@@ -1,5 +1,6 @@
 package com.augurworks.alfred.messaging;
 
+import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.config.RabbitMQConfig;
 import com.augurworks.alfred.server.AlfredService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,17 +70,18 @@ public class TrainingConsumer {
     private void processMessage(TrainingMessage message) {
         MDC.put("netId", message.getNetId());
         log.debug("Received an incoming training message");
-        String result = alfredService.trainSynchronous(message.getNetId(), message.getData());
-        sendResult(message.getNetId(), result);
+        RectNetFixed rectNetFixed = alfredService.trainSynchronous(message.getNetId(), message.getData());
+        sendResult(rectNetFixed);
     }
 
-    private void sendResult(String netId, String result) {
-        log.debug("Sending message for net {}", netId);
-        TrainingMessage message = new TrainingMessage(netId, result);
+    private void sendResult(RectNetFixed rectNetFixed) {
+        log.debug("Sending message for net {}", rectNetFixed.getName());
+        TrainingMessage message = new TrainingMessage(rectNetFixed.getName(), rectNetFixed.getAugout(), rectNetFixed.getTrainingStats());
         try {
+            log.debug(mapper.writeValueAsString(message));
             resultChannel.basicPublish("", RabbitMQConfig.getResultsChannelName(rabbitMQEnv), null, mapper.writeValueAsString(message).getBytes());
         } catch (IOException e) {
-            log.error("An error occurred when publishing a message for net {}", netId, e);
+            log.error("An error occurred when publishing a message for net {}", rectNetFixed.getName(), e);
         }
     }
 }
