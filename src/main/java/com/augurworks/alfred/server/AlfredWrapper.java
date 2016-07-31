@@ -122,17 +122,16 @@ public class AlfredWrapper {
         return null;
     }
 
-    public static RectNetFixed trainStatic(String netId, String augtrain) {
+    public static RectNetFixed trainStatic(String netId, String augtrain, Integer timeoutMillis) {
         ScaleFunctionType scaleFunctionType = ScaleFunctionType.SIGMOID;
-        Integer timeout = 2 * 60;
 
         MDC.put("netId", netId);
-        MDC.put("trainingTimeLimitSec", timeout);
+        MDC.put("trainingTimeLimitSec", timeoutMillis / 1000);
         MDC.put("scaleFunctionType", scaleFunctionType.name());
 
         try {
             List<String> lines = Splitter.on("\n").splitToList(augtrain);
-            RectNetFixed net = new RectNetFixed(netId, lines, scaleFunctionType).train(timeout * 1000, 5);
+            RectNetFixed net = new RectNetFixed(netId, lines, scaleFunctionType).train(timeoutMillis, 5);
             return net;
         } catch (Exception t) { }
         return null;
