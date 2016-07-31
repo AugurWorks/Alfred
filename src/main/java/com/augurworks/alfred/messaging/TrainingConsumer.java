@@ -78,7 +78,6 @@ public class TrainingConsumer {
         log.debug("Sending message for net {}", rectNetFixed.getName());
         TrainingMessage message = new TrainingMessage(rectNetFixed.getName(), rectNetFixed.getAugout(), rectNetFixed.getTrainingStats());
         try {
-            log.debug(mapper.writeValueAsString(message));
             resultChannel.basicPublish("", RabbitMQConfig.getResultsChannelName(rabbitMQEnv), null, mapper.writeValueAsString(message).getBytes());
         } catch (IOException e) {
             log.error("An error occurred when publishing a message for net {}", rectNetFixed.getName(), e);
