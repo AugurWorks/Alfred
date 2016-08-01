@@ -384,9 +384,8 @@ public class RectNetFixed {
      * @throws InterruptedException
      */
     public RectNetFixed train(long trainingTimeLimitMillis, int maxTries) throws InterruptedException {
-        boolean completed = false;
         int tryNumber = 0;
-        while (!completed && tryNumber < maxTries) {
+        while (tryNumber < maxTries) {
             if (trainingTimeLimitMillis <= 0) {
                 log.info("Training timeout was {}, which is <= 0, so jobs will not time out.", trainingTimeLimitMillis);
             }
@@ -400,7 +399,7 @@ public class RectNetFixed {
             BigDecimal score = null;
 
             List<InputsAndTarget> inputsAndTargets = netSpec.getNetData().getTrainData();
-            logStatSnapshot(0, score, inputsAndTargets, TrainingStage.STARTING);
+            logStatSnapshot(0, null, inputsAndTargets, TrainingStage.STARTING);
             for (fileIteration = 0; fileIteration < netSpec.getNumberFileIterations(); fileIteration++) {
 
                 // train all data rows for numberRowIterations times.

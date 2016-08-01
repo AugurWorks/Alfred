@@ -43,16 +43,6 @@ public class NetDataSpecification {
             return this;
         }
 
-        public Builder desiredMin(double desiredMin) {
-            this.desiredMin = desiredMin;
-            return this;
-        }
-
-        public Builder desiredMax(double desiredMax) {
-            this.desiredMax = desiredMax;
-            return this;
-        }
-
         private double getMinTarget() {
             double minSeen = Double.POSITIVE_INFINITY;
             for (BigDecimal target : targets) {
@@ -119,5 +109,4 @@ public class NetDataSpecification {
     public BigDecimal denormalize(BigDecimal value) {
         return BigDecimal.valueOf(scaleFunction.denormalize(value.doubleValue()));
     }
-
 }
