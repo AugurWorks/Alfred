@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
-import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.UUID;
 
@@ -54,7 +53,6 @@ public class AlfredEndpoint {
         return id;
     }
 
-    @ApiIgnore
     @RequestMapping(value="/", method = RequestMethod.GET)
     public @ResponseBody ModelAndView root() {
         log.debug("Home page requested");
