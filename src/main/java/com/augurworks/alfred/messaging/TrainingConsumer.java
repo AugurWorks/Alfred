@@ -2,7 +2,7 @@ package com.augurworks.alfred.messaging;
 
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.config.RabbitMQConfig;
-import com.augurworks.alfred.server.AlfredService;
+import com.augurworks.alfred.server.AlfredWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -24,8 +24,6 @@ public class TrainingConsumer {
 
     Logger log = LoggerFactory.getLogger(TrainingConsumer.class);
 
-    private final AlfredService alfredService;
-
     private Channel trainingChannel;
     private Channel resultChannel;
 
@@ -34,8 +32,7 @@ public class TrainingConsumer {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
-    public TrainingConsumer(AlfredService alfredService, Channel trainingChannel, Channel resultChannel, @Value("${rabbitmq.env}") String rabbitMQEnv) {
-        this.alfredService = alfredService;
+    public TrainingConsumer(Channel trainingChannel, Channel resultChannel, @Value("${rabbitmq.env}") String rabbitMQEnv) {
         this.trainingChannel = trainingChannel;
         this.resultChannel = resultChannel;
         this.rabbitMQEnv = rabbitMQEnv;
@@ -70,7 +67,7 @@ public class TrainingConsumer {
     private void processMessage(TrainingMessage message) {
         MDC.put("netId", message.getNetId());
         log.debug("Received an incoming training message");
-        RectNetFixed rectNetFixed = alfredService.trainSynchronous(message.getNetId(), message.getData());
+        RectNetFixed rectNetFixed = AlfredWrapper.trainStatic(message.getNetId(), message.getData(), 3600000);
         sendResult(rectNetFixed);
     }
 
