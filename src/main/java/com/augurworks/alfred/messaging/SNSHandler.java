@@ -21,7 +21,7 @@ public class SNSHandler implements RequestHandler<SNSEvent, TrainingMessage> {
     public TrainingMessage handleRequest(SNSEvent snsEvent, Context context) {
         try {
             TrainingMessage trainingMessage = mapper.readValue(snsEvent.getRecords().get(0).getSNS().getMessage(), TrainingMessage.class);
-            RectNetFixed rectNetFixed = AlfredWrapper.trainStatic(trainingMessage.getNetId(), trainingMessage.getData(), context.getRemainingTimeInMillis() - 1000 * TRAINING_BUFFER_SEC);
+            RectNetFixed rectNetFixed = AlfredWrapper.trainStatic(trainingMessage, context.getRemainingTimeInMillis() - 1000 * TRAINING_BUFFER_SEC);
             TrainingMessage outputMessage = new TrainingMessage(rectNetFixed.getName(), rectNetFixed.getAugout(), rectNetFixed.getTrainingStats());
             sqsClient.sendMessage(trainingMessage.getMetadata().get(SQS_NAME_KEY), mapper.writeValueAsString(outputMessage));
             return outputMessage;
