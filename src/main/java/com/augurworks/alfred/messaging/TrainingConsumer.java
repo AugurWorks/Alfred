@@ -2,6 +2,7 @@ package com.augurworks.alfred.messaging;
 
 import com.augurworks.alfred.RectNetFixed;
 import com.augurworks.alfred.config.RabbitMQConfig;
+import com.augurworks.alfred.logging.LoggingUtils;
 import com.augurworks.alfred.server.AlfredWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @Component
 public class TrainingConsumer {
@@ -64,10 +67,12 @@ public class TrainingConsumer {
         }
     }
 
-    private void processMessage(TrainingMessage message) {
+    private void processMessage(TrainingMessage message) throws UnknownHostException {
+        LoggingUtils.addFluentAppender(message, InetAddress.getLocalHost().getHostName());
+
         MDC.put("netId", message.getNetId());
         log.debug("Received an incoming training message");
-        RectNetFixed rectNetFixed = AlfredWrapper.trainStatic(message.getNetId(), message.getData(), 3600000);
+        RectNetFixed rectNetFixed = AlfredWrapper.trainStatic(message, 3600000);
         sendResult(rectNetFixed);
     }
 
