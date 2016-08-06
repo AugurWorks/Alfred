@@ -76,25 +76,6 @@ public class FixedNeuron implements Input {
     }
 
     /**
-     * Sets the weight from this neuron to another, given the index of that
-     * neuron and the new weight to set.
-     *
-     * @param index
-     *            index of the input to change weight to
-     * @param w
-     *            new weight value
-     */
-    public void setWeight(int index, BigDecimal w) {
-        Validate.isTrue(index >= 0);
-        Validate.isTrue(index < this.numInputs);
-        if (index < 0 || index >= this.numInputs) {
-            log.error("Index out of accepted range.");
-            throw new IllegalArgumentException("Index out of range");
-        }
-        this.weights[index] = w;
-    }
-
-    /**
      * Gets the output of this neuron, which implicitly calculates the outputs
      * of all the neurons below, unless the given code is the same as the prior
      * code (indicating that a complete recompute is not necessary).

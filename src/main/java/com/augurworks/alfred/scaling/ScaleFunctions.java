@@ -9,15 +9,6 @@ public class ScaleFunctions {
         LINEAR,
         SIGMOID,
         ;
-
-        public static ScaleFunctionType fromString(String name) {
-            for (ScaleFunctionType type : values()) {
-                if (name.equalsIgnoreCase(type.name())) {
-                    return type;
-                }
-            }
-            throw new IllegalArgumentException("Unrecognized scale function " + name);
-        }
     }
 
     public static ScaleFunction createLinearScaleFunction(double min, double max,

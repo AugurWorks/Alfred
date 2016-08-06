@@ -3,9 +3,9 @@ package com.augurworks.alfred;
 import com.augurworks.alfred.scaling.ScaleFunction;
 import com.augurworks.alfred.scaling.ScaleFunctions;
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
-import com.google.common.collect.Lists;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 public class NetDataSpecification {
@@ -24,10 +24,10 @@ public class NetDataSpecification {
 
     public static class Builder {
 
-        private List<String> dates = Lists.newArrayList();
-        private List<BigDecimal> targets = Lists.newArrayList();
-        private List<BigDecimal[]> inputSets = Lists.newArrayList();
-        private List<InputsAndTarget> predictionRows = Lists.newArrayList();
+        private List<String> dates = new ArrayList<>();
+        private List<BigDecimal> targets = new ArrayList<>();
+        private List<BigDecimal[]> inputSets = new ArrayList<>();
+        private List<InputsAndTarget> predictionRows = new ArrayList<>();
         private double desiredMin = 0.1;
         private double desiredMax = 0.9;
 
@@ -40,16 +40,6 @@ public class NetDataSpecification {
 
         public Builder addPredictionRow(String date, BigDecimal[] inputs) {
             predictionRows.add(new InputsAndTarget(date, null, inputs));
-            return this;
-        }
-
-        public Builder desiredMin(double desiredMin) {
-            this.desiredMin = desiredMin;
-            return this;
-        }
-
-        public Builder desiredMax(double desiredMax) {
-            this.desiredMax = desiredMax;
             return this;
         }
 
@@ -81,7 +71,7 @@ public class NetDataSpecification {
         }
 
         private List<InputsAndTarget> buildInputs() {
-            List<InputsAndTarget> inputsAndTargets = Lists.newArrayList();
+            List<InputsAndTarget> inputsAndTargets = new ArrayList<>();
             for (int i = 0; i < targets.size(); i++) {
                 inputsAndTargets.add(new InputsAndTarget(dates.get(i), targets.get(i), inputSets.get(i)));
             }
@@ -119,5 +109,4 @@ public class NetDataSpecification {
     public BigDecimal denormalize(BigDecimal value) {
         return BigDecimal.valueOf(scaleFunction.denormalize(value.doubleValue()));
     }
-
 }

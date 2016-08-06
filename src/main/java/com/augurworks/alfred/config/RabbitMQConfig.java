@@ -3,8 +3,6 @@ package com.augurworks.alfred.config;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.ShutdownListener;
-import com.rabbitmq.client.ShutdownSignalException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,11 +75,7 @@ public class RabbitMQConfig {
         factory.setTopologyRecoveryEnabled(true);
 
         Connection connection = factory.newConnection();
-        connection.addShutdownListener(new ShutdownListener() {
-            public void shutdownCompleted(ShutdownSignalException e) {
-                log.error("RabbitMQ connection lost", e);
-            }
-        });
+        connection.addShutdownListener(e -> log.error("RabbitMQ connection lost", e));
         return connection;
     }
 
