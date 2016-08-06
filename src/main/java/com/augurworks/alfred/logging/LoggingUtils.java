@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.more.appenders.DataFluentAppender;
 import com.augurworks.alfred.messaging.TrainingMessage;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
@@ -21,22 +22,26 @@ public class LoggingUtils {
 
     public static void addFluentAppender(TrainingMessage trainingMessage, String hostname) {
         Map<String, String> metadata = trainingMessage.getMetadata();
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        String fluentHost = metadata.get(FLUENT_HOST_KEY);
 
-        DataFluentAppender fluentAppender = new DataFluentAppender();
-        fluentAppender.setName("FluentD");
-        fluentAppender.setRemoteHost(metadata.get(FLUENT_HOST_KEY));
-        fluentAppender.setPort(FLUENT_PORT);
-        fluentAppender.setLabel("logback");
-        fluentAppender.setMaxQueueSize(999);
-        fluentAppender.addAdditionalField(createField(FUNCTION_KEY, FUNCTION_VALUE));
-        fluentAppender.addAdditionalField(createField(HOSTNAME_KEY, hostname));
-        fluentAppender.addAdditionalField(createField(ENV_KEY, metadata.get(LOGGING_ENV_KEY)));
-        fluentAppender.setContext(loggerContext);
-        fluentAppender.start();
+        if (!StringUtils.isEmpty(fluentHost)) {
+            LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 
-        Logger logger = (Logger) LoggerFactory.getLogger("com.augurworks.alfred");
-        logger.addAppender(fluentAppender);
+            DataFluentAppender fluentAppender = new DataFluentAppender();
+            fluentAppender.setName("FluentD");
+            fluentAppender.setRemoteHost(fluentHost);
+            fluentAppender.setPort(FLUENT_PORT);
+            fluentAppender.setLabel("logback");
+            fluentAppender.setMaxQueueSize(999);
+            fluentAppender.addAdditionalField(createField(FUNCTION_KEY, FUNCTION_VALUE));
+            fluentAppender.addAdditionalField(createField(HOSTNAME_KEY, hostname));
+            fluentAppender.addAdditionalField(createField(ENV_KEY, metadata.get(LOGGING_ENV_KEY)));
+            fluentAppender.setContext(loggerContext);
+            fluentAppender.start();
+
+            Logger logger = (Logger) LoggerFactory.getLogger("com.augurworks.alfred");
+            logger.addAppender(fluentAppender);
+        }
     }
 
     private static DataFluentAppender.Field createField(String key, String value) {
