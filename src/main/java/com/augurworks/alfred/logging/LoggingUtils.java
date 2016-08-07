@@ -40,6 +40,7 @@ public class LoggingUtils {
             fluentAppender.start();
 
             Logger logger = (Logger) LoggerFactory.getLogger("com.augurworks.alfred");
+            logger.detachAppender("FluentD");
             logger.addAppender(fluentAppender);
         }
     }
