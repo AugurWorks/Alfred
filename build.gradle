@@ -21,7 +21,7 @@ bootRepackage {
 }
 
 group = 'com.augurworks.alfred'
-version = '1.7.0'
+version = '2.0.0-RC1'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
