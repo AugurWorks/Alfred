@@ -1,21 +1,24 @@
 package com.augurworks.alfred;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import org.apache.commons.lang3.Validate;
+import org.apache.log4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.augurworks.alfred.scaling.ScaleFunctions.ScaleFunctionType;
 import com.augurworks.alfred.stats.TrainingStage;
 import com.augurworks.alfred.stats.TrainingStat;
 import com.augurworks.alfred.util.BigDecimals;
 import com.augurworks.alfred.util.FileParser;
 import com.augurworks.alfred.util.TimeUtils;
-import lombok.Data;
-import org.apache.commons.lang3.Validate;
-import org.apache.log4j.MDC;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.Data;
 
 
 /**
@@ -399,7 +402,7 @@ public class RectNetFixed {
             BigDecimal score = null;
 
             List<InputsAndTarget> inputsAndTargets = netSpec.getNetData().getTrainData();
-            logStatSnapshot(0, null, inputsAndTargets, TrainingStage.STARTING);
+            logStatSnapshot(0, null, inputsAndTargets, TrainingStage.STARTING, Optional.empty());
             for (fileIteration = 0; fileIteration < netSpec.getNumberFileIterations(); fileIteration++) {
 
                 // train all data rows for numberRowIterations times.
@@ -425,6 +428,8 @@ public class RectNetFixed {
                     BigDecimal difference = inputsAndTarget.getTarget().subtract(this.getOutput());
                     score = score.add(difference.multiply(difference));
                 }
+                double errorsSquared = score.doubleValue();
+                double rmsError = getRmsError(inputsAndTargets.size(), errorsSquared);
                 score = score.multiply(BigDecimal.valueOf(-1.0));
                 score = score.divide(BigDecimal.valueOf(inputsAndTargets.size()), BigDecimals.MATH_CONTEXT);
 
@@ -450,7 +455,7 @@ public class RectNetFixed {
                 }
 
                 if (fileIteration % 100 == 0) {
-                    logStatSnapshot(fileIteration, score, inputsAndTargets, TrainingStage.RUNNING);
+                    logStatSnapshot(fileIteration, score, inputsAndTargets, TrainingStage.RUNNING, Optional.of(rmsError));
                 }
 
             }
@@ -464,7 +469,7 @@ public class RectNetFixed {
                 long timeRemaining = trainingTimeLimitMillis - timeExpired;
                 log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
             } else {
-                logStatSnapshot(fileIteration, score, inputsAndTargets, TrainingStage.DONE);
+                logStatSnapshot(fileIteration, score, inputsAndTargets, TrainingStage.DONE, Optional.empty());
                 return this;
             }
         }
@@ -472,13 +477,26 @@ public class RectNetFixed {
         throw new IllegalStateException("Unable to train file " + name + "!");
     }
 
-    private void logStatSnapshot(int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets, TrainingStage trainingStage) {
+    private double getRmsError(int size, double errorsSquared) {
+        if (errorsSquared == 0) {
+            return 0;
+        } else {
+            return Math.sqrt(errorsSquared / (1.0 * size));
+        }
+    }
+
+    private void logStatSnapshot(int fileIteration, BigDecimal score, List<InputsAndTarget> inputsAndTargets, TrainingStage trainingStage, Optional<Double> rmsError) {
         MDC.put("netScore", score == null ? null : score.round(new MathContext(4)).toString());
         MDC.put("roundsTrained", fileIteration);
-        double rmsError = computeRmsError(inputsAndTargets);
+        double rmsErrorValue;
+        if (rmsError.isPresent()) {
+            rmsErrorValue = rmsError.get();
+        } else {
+            rmsErrorValue = computeRmsError(inputsAndTargets);
+        }
         log.debug("Net {} has trained for {} rounds, RMS Error: {}", this.name, fileIteration, rmsError);
         TrainingStat trainingStat = new TrainingStat(this.name, this.netSpec.getNetData().getTrainData().get(0).getInputs().length, this.netSpec.getLearningConstant().doubleValue(), this.netSpec.getNumberRowIterations());
-        trainingStat.setRmsError(rmsError);
+        trainingStat.setRmsError(rmsErrorValue);
         trainingStat.setSecondsElapsed((int) (System.currentTimeMillis() - this.timingInfo.getStartTime()) / 1000);
         trainingStat.setRoundsTrained(fileIteration);
         trainingStat.setTrainingStage(trainingStage);
@@ -498,10 +516,6 @@ public class RectNetFixed {
             double square = Math.pow(target - actual, 2);
             totalRmsError += square;
         }
-        if (totalRmsError == 0) {
-            return 0;
-        } else {
-            return Math.sqrt(totalRmsError / (1.0 * inputsAndTargets.size()));
-        }
+        return getRmsError(inputsAndTargets.size(), totalRmsError);
     }
 }
