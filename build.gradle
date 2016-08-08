@@ -13,6 +13,7 @@ apply plugin: 'spring-boot'
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: "com.github.johnrengelman.shadow"
+apply plugin: 'eclipse'
 
 mainClassName = 'com.augurworks.alfred.Application'
 
