@@ -17,7 +17,7 @@ public class SNSHandler implements RequestHandler<SNSEvent, TrainingMessage> {
     AmazonSQSClient sqsClient = new AmazonSQSClient();
 
     private static final String SQS_NAME_KEY = "sqsName";
-    private final Integer TRAINING_BUFFER_SEC = 5;
+    private final Integer TRAINING_BUFFER_SEC = 15;
 
     public TrainingMessage handleRequest(SNSEvent snsEvent, Context context) {
         try {
