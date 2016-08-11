@@ -12,7 +12,6 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -70,8 +69,6 @@ public class TrainingConsumer {
     private void processMessage(TrainingMessage message) throws UnknownHostException {
         LoggingUtils.addFluentAppender(message, InetAddress.getLocalHost().getHostName());
 
-        MDC.put("netId", message.getNetId());
-        log.debug("Received an incoming training message");
         RectNetFixed rectNetFixed = AlfredWrapper.trainStatic(message, 3600000);
         sendResult(rectNetFixed);
     }

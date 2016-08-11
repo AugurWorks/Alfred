@@ -183,6 +183,7 @@ public class RectNetFixed {
      * Returns the output value from this network run.
      */
     public BigDecimal getOutput() {
+        log.debug("Getting Alfred output");
         BigDecimal[] outs = new BigDecimal[this.netSpec.getSide()];
         BigDecimal[] ins = new BigDecimal[this.netSpec.getSide()];
         for (int j = 0; j < this.netSpec.getSide(); j++) {
@@ -198,6 +199,7 @@ public class RectNetFixed {
             ins = outs;
             outs = new BigDecimal[this.netSpec.getSide()];
         }
+        log.debug("Alfred output calculations complete");
         return this.output.getOutput(ins);
     }
 
@@ -387,6 +389,7 @@ public class RectNetFixed {
      * @throws InterruptedException
      */
     public RectNetFixed train(long trainingTimeLimitMillis, int maxTries) throws InterruptedException {
+        log.info("Starting Alfred training");
         int tryNumber = 0;
         while (tryNumber < maxTries) {
             if (trainingTimeLimitMillis <= 0) {
@@ -415,6 +418,7 @@ public class RectNetFixed {
                 }
 
                 if (this.hasTimeExpired()) {
+                    log.debug("Breaking training because time ran out");
                     this.trainingStopReason = TrainingStopReason.OUT_OF_TIME;
                     break;
                 }
@@ -450,6 +454,7 @@ public class RectNetFixed {
                 } else if (fileIteration < netSpec.getMinTrainingRounds()) {
                     continue;
                 } else {
+                    log.debug("Breaking training at a local max");
                     this.brokeAtLocalMax = true;
                     break;
                 }
@@ -460,6 +465,7 @@ public class RectNetFixed {
 
             }
             if (this.trainingStopReason == null) {
+                log.debug("Breaking training because the training limit was hit");
                 this.trainingStopReason = TrainingStopReason.HIT_TRAINING_LIMIT;
             }
             MDC.put("netScore", score.round(new MathContext(4)).toString());
@@ -469,6 +475,7 @@ public class RectNetFixed {
                 long timeRemaining = trainingTimeLimitMillis - timeExpired;
                 log.info("Retraining net from file {} with {} remaining.", name, TimeUtils.formatSeconds((int)timeRemaining/1000));
             } else {
+                log.debug("Finished Alfred training");
                 logStatSnapshot(fileIteration, score, inputsAndTargets, TrainingStage.DONE, Optional.empty());
                 return this;
             }
