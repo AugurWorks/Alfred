@@ -457,7 +457,7 @@ public class RectNetFixed {
                     break;
                 }
 
-                if (fileIteration % 100 == 0) {
+                if (fileIteration % 100 == 0 &&  fileIteration != 0) {
                     logStatSnapshot(fileIteration, score, inputsAndTargets, TrainingStage.RUNNING, Optional.of(rmsError));
                 }
 
