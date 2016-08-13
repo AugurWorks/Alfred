@@ -183,7 +183,6 @@ public class RectNetFixed {
      * Returns the output value from this network run.
      */
     public BigDecimal getOutput() {
-        log.debug("Getting Alfred output");
         BigDecimal[] outs = new BigDecimal[this.netSpec.getSide()];
         BigDecimal[] ins = new BigDecimal[this.netSpec.getSide()];
         for (int j = 0; j < this.netSpec.getSide(); j++) {
@@ -199,7 +198,6 @@ public class RectNetFixed {
             ins = outs;
             outs = new BigDecimal[this.netSpec.getSide()];
         }
-        log.debug("Alfred output calculations complete");
         return this.output.getOutput(ins);
     }
 
@@ -501,7 +499,7 @@ public class RectNetFixed {
         } else {
             rmsErrorValue = computeRmsError(inputsAndTargets);
         }
-        log.debug("Net {} has trained for {} rounds, RMS Error: {}", this.name, fileIteration, rmsError);
+        log.debug("Net {} has trained for {} rounds, RMS Error: {}", this.name, fileIteration, rmsError.orElse(0D));
         TrainingStat trainingStat = new TrainingStat(this.name, this.netSpec.getNetData().getTrainData().get(0).getInputs().length, this.netSpec.getLearningConstant().doubleValue(), this.netSpec.getNumberRowIterations());
         trainingStat.setRmsError(rmsErrorValue);
         trainingStat.setSecondsElapsed((int) (System.currentTimeMillis() - this.timingInfo.getStartTime()) / 1000);
