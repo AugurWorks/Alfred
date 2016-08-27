@@ -16,9 +16,9 @@ spring-test/test-output/
 argfile*
 
 libs
+data-loader/data
 
-gradlew*
-gradle/*
+gradle*
 
 activemq-data/
 

@@ -22,12 +22,9 @@ RUN apk add --no-cache wget bash libstdc++ && \
 
     # Build WAR file
     mkdir -p /app && \
-    mkdir -p /gradle && \
-    mkdir -p /app/grails-app/init
+    mkdir -p /gradle
 
 COPY build.gradle /app
-COPY gradle.properties /app
-COPY grails-app/init /app/grails-app/init
 
 WORKDIR /app
 
@@ -37,11 +34,9 @@ RUN gradle build
 COPY . /app
 
 RUN gradle bootRepackage && \
-
-    # Copy WAR into Tomcat
-    mv build/libs/alfred*?.war /app/alfred.war
+    mv build/libs/alfred*?.jar /app/alfred.jar
 
 # Expose port and volume
 EXPOSE 8080
 
-CMD java -jar /app/alfred.war
+CMD java -jar /app/alfred.jar

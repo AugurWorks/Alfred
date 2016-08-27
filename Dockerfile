@@ -30,7 +30,7 @@ RUN apk add --no-cache wget bash libstdc++ && \
     gradle bootRepackage && \
 
     # Copy WAR into Tomcat
-    mv build/libs/alfred*?.war /opt/alfred.war && \
+    mv build/libs/alfred*?.jar /opt/alfred.jar && \
 
     # Remove Gradle and working directory
     rm /usr/local/gradle && \
@@ -44,4 +44,4 @@ RUN apk add --no-cache wget bash libstdc++ && \
 # Expose port and volume
 EXPOSE 8080
 
-CMD java -jar /opt/alfred.war
+CMD java -jar /opt/alfred.jar
